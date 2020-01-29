@@ -21,14 +21,13 @@ X VDD 8 -50 600 100 D 50 50 1 1 W
 ENDDRAW
 ENDDEF
 #
-# Amplifier_Instrumentation_INA126
+# 2401-pcb-rescue_INA126-Amplifier_Instrumentation
 #
-DEF Amplifier_Instrumentation_INA126 U 0 5 Y Y 1 F N
+DEF 2401-pcb-rescue_INA126-Amplifier_Instrumentation U 0 5 Y Y 1 F N
 F0 "U" 150 125 50 H V L CNN
-F1 "Amplifier_Instrumentation_INA126" 150 -125 50 H V L CNN
+F1 "2401-pcb-rescue_INA126-Amplifier_Instrumentation" 150 -125 50 H V L CNN
 F2 "" 100 0 50 H I C CNN
 F3 "" 100 0 50 H I C CNN
-ALIAS INA129 INA126
 $FPLIST
  DIP*W7.62mm*
  SOIC*P1.27mm*
@@ -46,11 +45,11 @@ X Rg 8 -300 -100 100 R 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# Amplifier_Operational_LMV321
+# Amplifier_Operational_MCP6001U
 #
-DEF Amplifier_Operational_LMV321 U 0 5 Y Y 1 F N
+DEF Amplifier_Operational_MCP6001U U 0 5 Y Y 1 F N
 F0 "U" 0 200 50 H V L CNN
-F1 "Amplifier_Operational_LMV321" 0 -200 50 H V L CNN
+F1 "Amplifier_Operational_MCP6001U" 0 -200 50 H V L CNN
 F2 "" 0 0 50 H I L CNN
 F3 "" 0 0 50 H I C CNN
 ALIAS MCP6401UT-xOT MCP6001U OPA333xxDCK OPA376xxDCK OPA330xxDCK
@@ -65,32 +64,6 @@ X V+ 5 -100 300 150 D 50 50 0 1 W
 X + 1 -300 100 100 R 50 50 1 1 I
 X - 3 -300 -100 100 R 50 50 1 1 I
 X ~ 4 300 0 100 L 50 50 1 1 O
-ENDDRAW
-ENDDEF
-#
-# Connector_Conn_01x04_Female
-#
-DEF Connector_Conn_01x04_Female J 0 40 Y N 1 F N
-F0 "J" 0 200 50 H V C CNN
-F1 "Connector_Conn_01x04_Female" 0 -300 50 H V C CNN
-F2 "" 0 0 50 H I C CNN
-F3 "" 0 0 50 H I C CNN
-$FPLIST
- Connector*:*_1x??_*
-$ENDFPLIST
-DRAW
-A 0 -200 20 901 -901 1 1 6 N 0 -180 0 -220
-A 0 -100 20 901 -901 1 1 6 N 0 -80 0 -120
-A 0 0 20 901 -901 1 1 6 N 0 20 0 -20
-A 0 100 20 901 -901 1 1 6 N 0 120 0 80
-P 2 1 1 6 -50 -200 -20 -200 N
-P 2 1 1 6 -50 -100 -20 -100 N
-P 2 1 1 6 -50 0 -20 0 N
-P 2 1 1 6 -50 100 -20 100 N
-X Pin_1 1 -200 100 150 R 50 50 1 1 P
-X Pin_2 2 -200 0 150 R 50 50 1 1 P
-X Pin_3 3 -200 -100 150 R 50 50 1 1 P
-X Pin_4 4 -200 -200 150 R 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
@@ -150,6 +123,49 @@ X SWO/TDO 6 500 -100 100 L 50 50 1 1 I
 X KEY 7 -400 0 100 R 50 50 1 1 N N
 X NC/TDI 8 500 -200 100 L 50 50 1 1 O
 X GNDDetect 9 -100 -600 100 U 50 50 1 1 P
+ENDDRAW
+ENDDEF
+#
+# Connector_Generic_MountingPin_Conn_01x04_MountingPin
+#
+DEF Connector_Generic_MountingPin_Conn_01x04_MountingPin J 0 40 Y N 1 F N
+F0 "J" 0 200 50 H V C CNN
+F1 "Connector_Generic_MountingPin_Conn_01x04_MountingPin" 50 -300 50 H V L CNN
+F2 "" 0 0 50 H I C CNN
+F3 "" 0 0 50 H I C CNN
+$FPLIST
+ Connector*:*_1x??-1MP*
+$ENDFPLIST
+DRAW
+T 0 0 -265 15 0 1 1 Mounting Normal 0 C C
+S -50 -195 0 -205 1 1 6 N
+S -50 -95 0 -105 1 1 6 N
+S -50 5 0 -5 1 1 6 N
+S -50 105 0 95 1 1 6 N
+S -50 150 50 -250 1 1 10 f
+P 2 1 1 6 -40 -280 40 -280 N
+X Pin_1 1 -200 100 150 R 50 50 1 1 P
+X Pin_2 2 -200 0 150 R 50 50 1 1 P
+X Pin_3 3 -200 -100 150 R 50 50 1 1 P
+X Pin_4 4 -200 -200 150 R 50 50 1 1 P
+X MountPin MP 0 -400 120 U 50 50 1 1 P
+ENDDRAW
+ENDDEF
+#
+# Connector_TestPoint
+#
+DEF Connector_TestPoint TP 0 30 N N 1 F N
+F0 "TP" 0 270 50 H V C CNN
+F1 "Connector_TestPoint" 0 200 50 H V C CNN
+F2 "" 200 0 50 H I C CNN
+F3 "" 200 0 50 H I C CNN
+$FPLIST
+ Pin*
+ Test*
+$ENDFPLIST
+DRAW
+C 0 130 30 0 1 0 N
+X 1 1 0 0 100 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
@@ -412,6 +428,22 @@ P 2 0 1 0 -30 50 0 100 N
 P 2 0 1 0 0 0 0 100 N
 P 2 0 1 0 0 100 30 50 N
 X Vbatt 1 0 0 0 U 50 50 1 1 W N
+ENDDRAW
+ENDDEF
+#
+# Mechanical_MountingHole_Pad
+#
+DEF Mechanical_MountingHole_Pad H 0 40 N N 1 F N
+F0 "H" 0 250 50 H V C CNN
+F1 "Mechanical_MountingHole_Pad" 0 175 50 H V C CNN
+F2 "" 0 0 50 H I C CNN
+F3 "" 0 0 50 H I C CNN
+$FPLIST
+ MountingHole*Pad*
+$ENDFPLIST
+DRAW
+C 0 50 50 0 1 50 N
+X 1 1 0 -100 100 U 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
