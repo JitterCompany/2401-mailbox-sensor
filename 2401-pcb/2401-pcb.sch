@@ -28,8 +28,8 @@ $Comp
 L Sensor_Optical:SFH2440 D2
 U 1 1 5E1F4473
 P 6550 5650
-F 0 "D2" V 6450 5200 50  0000 L CNN
-F 1 "SFH2440" V 6550 5200 50  0000 L CNN
+F 0 "D2" V 6450 5150 50  0000 L CNN
+F 1 "SFH2440" V 6550 5150 50  0000 L CNN
 F 2 "OptoDevice:Osram_SMD-DIL2_4.5x4.0mm" H 6550 5825 50  0001 C CNN
 F 3 "http://www.osram-os.com/Graphics/XPic2/00231367_0.pdf/SFH%202440.pdf" H 6500 5650 50  0001 C CNN
 	1    6550 5650
@@ -1365,9 +1365,9 @@ Text Label 4800 10650 0    50   ~ 0
 Tx
 Text Label 4800 10750 0    50   ~ 0
 Rx
-Text Notes 6100 5200 0    50   ~ 0
+Text Notes 6050 6000 0    50   ~ 0
 7-9.4 nA/lx\nI_dark 1-10nA\n135pF
-Text Notes 5350 3600 0    50   ~ 0
+Text Notes 5250 4450 0    50   ~ 0
 0.4-0.57 nA/lx\nI_dark 0.01-5nA\n23pF
 $Comp
 L Amplifier_Operational:MCP6001U U6
@@ -1399,8 +1399,8 @@ $Comp
 L Device:D_Photo D1
 U 1 1 5E37F4FF
 P 5800 4050
-F 0 "D1" V 5650 3600 50  0000 L CNN
-F 1 "SFH2716" V 5750 3600 50  0000 L CNN
+F 0 "D1" V 5700 3500 50  0000 L CNN
+F 1 "SFH2716" V 5800 3500 50  0000 L CNN
 F 2 "Diode_SMD:D_0805_2012Metric" H 5750 4050 50  0001 C CNN
 F 3 "http://www.farnell.com/datasheets/2711855.pdf" H 5750 4050 50  0001 C CNN
 	1    5800 4050
@@ -1411,7 +1411,7 @@ L power:+2V8 #PWR0102
 U 1 1 5E39F7B9
 P 6650 3450
 F 0 "#PWR0102" H 6650 3300 50  0001 C CNN
-F 1 "+2V8" H 6665 3623 50  0000 C CNN
+F 1 "+2V8" H 6650 3600 50  0000 C CNN
 F 2 "" H 6650 3450 50  0001 C CNN
 F 3 "" H 6650 3450 50  0001 C CNN
 	1    6650 3450
@@ -1449,12 +1449,12 @@ Connection ~ 6650 3450
 $Comp
 L Device:R R6
 U 1 1 5E3B5466
-P 7150 3150
-F 0 "R6" V 6943 3150 50  0000 C CNN
-F 1 "10M" V 7034 3150 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 7080 3150 50  0001 C CNN
-F 3 "~" H 7150 3150 50  0001 C CNN
-	1    7150 3150
+P 6850 3150
+F 0 "R6" V 6700 3350 50  0000 C CNN
+F 1 "10M" V 6800 3350 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 6780 3150 50  0001 C CNN
+F 3 "~" H 6850 3150 50  0001 C CNN
+	1    6850 3150
 	0    1    1    0   
 $EndComp
 Wire Wire Line
@@ -1488,19 +1488,19 @@ $EndComp
 Text Label 7650 3750 0    50   ~ 0
 photo_diode_1
 Wire Wire Line
-	7400 3150 7300 3150
+	7400 3150 7000 3150
 Wire Wire Line
 	7400 3150 7400 3750
 Wire Wire Line
-	7000 3150 6300 3150
+	6700 3150 6300 3150
 Wire Wire Line
 	6450 3650 6400 3650
 Wire Wire Line
 	6400 3650 6400 4150
 Wire Wire Line
-	5800 4150 5900 4150
+	5800 4150 5950 4150
 Wire Wire Line
-	5800 3850 5900 3850
+	5800 3850 5950 3850
 Connection ~ 6300 3850
 Wire Wire Line
 	6300 3150 6300 3850
@@ -1511,8 +1511,8 @@ $Comp
 L Device:C_Small C10
 U 1 1 5E4F9649
 P 6850 2800
-F 0 "C10" V 6950 2650 50  0000 L CNN
-F 1 "15pF" V 7050 2650 50  0000 L CNN
+F 0 "C10" V 6950 2600 50  0000 L CNN
+F 1 "15pF" V 7050 2600 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric" H 6850 2800 50  0001 C CNN
 F 3 "~" H 6850 2800 50  0001 C CNN
 	1    6850 2800
@@ -1560,7 +1560,7 @@ L power:+2V8 #PWR0106
 U 1 1 5E522AD4
 P 7400 5050
 F 0 "#PWR0106" H 7400 4900 50  0001 C CNN
-F 1 "+2V8" H 7415 5223 50  0000 C CNN
+F 1 "+2V8" H 7400 5200 50  0000 C CNN
 F 2 "" H 7400 5050 50  0001 C CNN
 F 3 "" H 7400 5050 50  0001 C CNN
 	1    7400 5050
@@ -1598,12 +1598,12 @@ Connection ~ 7400 5050
 $Comp
 L Device:R R14
 U 1 1 5E522AEA
-P 7900 4750
-F 0 "R14" V 7693 4750 50  0000 C CNN
-F 1 "10M" V 7784 4750 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 7830 4750 50  0001 C CNN
-F 3 "~" H 7900 4750 50  0001 C CNN
-	1    7900 4750
+P 7600 4750
+F 0 "R14" V 7450 4950 50  0000 C CNN
+F 1 "10M" V 7550 4950 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 7530 4750 50  0001 C CNN
+F 3 "~" H 7600 4750 50  0001 C CNN
+	1    7600 4750
 	0    1    1    0   
 $EndComp
 Wire Wire Line
@@ -1635,20 +1635,16 @@ F 4 "Setting this to 10M (same as feedback) is another 'style' of transimpedance
 	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	8150 4750 8050 4750
+	8150 4750 7750 4750
 Wire Wire Line
 	8150 4750 8150 5350
 Wire Wire Line
-	7750 4750 7050 4750
+	7450 4750 7050 4750
 Wire Wire Line
 	7200 5250 7150 5250
 Wire Wire Line
 	7150 5250 7150 5750
 Connection ~ 6950 5750
-Wire Wire Line
-	6550 5750 6650 5750
-Wire Wire Line
-	6550 5450 6650 5450
 Connection ~ 7050 5450
 Wire Wire Line
 	7050 4750 7050 5450
@@ -1659,8 +1655,8 @@ $Comp
 L Device:C_Small C17
 U 1 1 5E522B0D
 P 7600 4400
-F 0 "C17" V 7700 4250 50  0000 L CNN
-F 1 "15pF" V 7800 4250 50  0000 L CNN
+F 0 "C17" V 7650 4200 50  0000 L CNN
+F 1 "15pF" V 7750 4200 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric" H 7600 4400 50  0001 C CNN
 F 3 "~" H 7600 4400 50  0001 C CNN
 	1    7600 4400
@@ -2310,31 +2306,31 @@ Wire Wire Line
 $Comp
 L Connector:TestPoint TP14
 U 1 1 5E3C7E77
-P 5900 3850
-F 0 "TP14" H 5850 4050 50  0000 L CNN
-F 1 "DNI" H 5958 3877 50  0001 L CNN
-F 2 "TestPoint:TestPoint_THTPad_D1.0mm_Drill0.5mm" H 6100 3850 50  0001 C CNN
-F 3 "~" H 6100 3850 50  0001 C CNN
-	1    5900 3850
+P 5950 3850
+F 0 "TP14" H 5900 4050 50  0000 L CNN
+F 1 "DNI" H 6008 3877 50  0001 L CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 6150 3850 50  0001 C CNN
+F 3 "~" H 6150 3850 50  0001 C CNN
+	1    5950 3850
 	1    0    0    -1  
 $EndComp
-Connection ~ 5900 3850
+Connection ~ 5950 3850
 Wire Wire Line
-	5900 3850 6300 3850
+	5950 3850 6300 3850
 $Comp
 L Connector:TestPoint TP15
 U 1 1 5E3C8873
-P 5900 4150
-F 0 "TP15" H 5850 4350 50  0000 L CNN
-F 1 "DNI" H 5958 4177 50  0001 L CNN
-F 2 "TestPoint:TestPoint_THTPad_D1.0mm_Drill0.5mm" H 6100 4150 50  0001 C CNN
-F 3 "~" H 6100 4150 50  0001 C CNN
-	1    5900 4150
+P 5950 4150
+F 0 "TP15" H 5800 4350 50  0000 L CNN
+F 1 "DNI" H 6008 4177 50  0001 L CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.0mm_Drill0.5mm" H 6150 4150 50  0001 C CNN
+F 3 "~" H 6150 4150 50  0001 C CNN
+	1    5950 4150
 	-1   0    0    1   
 $EndComp
-Connection ~ 5900 4150
+Connection ~ 5950 4150
 Wire Wire Line
-	5900 4150 6200 4150
+	5950 4150 6200 4150
 Connection ~ 6200 4150
 Wire Wire Line
 	6200 4150 6400 4150
@@ -2355,31 +2351,25 @@ Wire Wire Line
 $Comp
 L Connector:TestPoint TP17
 U 1 1 5E3FA987
-P 6650 5450
-F 0 "TP17" H 6600 5650 50  0000 L CNN
-F 1 "DNI" H 6708 5477 50  0001 L CNN
-F 2 "TestPoint:TestPoint_THTPad_D1.0mm_Drill0.5mm" H 6850 5450 50  0001 C CNN
-F 3 "~" H 6850 5450 50  0001 C CNN
-	1    6650 5450
+P 6700 5450
+F 0 "TP17" H 6650 5650 50  0000 L CNN
+F 1 "DNI" H 6758 5477 50  0001 L CNN
+F 2 "TestPoint:TestPoint_Pad_D1.0mm" H 6900 5450 50  0001 C CNN
+F 3 "~" H 6900 5450 50  0001 C CNN
+	1    6700 5450
 	1    0    0    -1  
 $EndComp
-Connection ~ 6650 5450
-Wire Wire Line
-	6650 5450 7050 5450
 $Comp
 L Connector:TestPoint TP18
 U 1 1 5E3FB6F3
-P 6650 5750
-F 0 "TP18" H 6600 5950 50  0000 L CNN
-F 1 "DNI" H 6708 5777 50  0001 L CNN
-F 2 "TestPoint:TestPoint_THTPad_D1.0mm_Drill0.5mm" H 6850 5750 50  0001 C CNN
-F 3 "~" H 6850 5750 50  0001 C CNN
-	1    6650 5750
+P 6700 5750
+F 0 "TP18" H 6550 5950 50  0000 L CNN
+F 1 "DNI" H 6758 5777 50  0001 L CNN
+F 2 "TestPoint:TestPoint_THTPad_D1.0mm_Drill0.5mm" H 6900 5750 50  0001 C CNN
+F 3 "~" H 6900 5750 50  0001 C CNN
+	1    6700 5750
 	-1   0    0    1   
 $EndComp
-Connection ~ 6650 5750
-Wire Wire Line
-	6650 5750 6950 5750
 $Comp
 L Connector:TestPoint TP19
 U 1 1 5E3FB865
@@ -2556,4 +2546,190 @@ Wire Wire Line
 	9650 9350 9650 9650
 Text Notes 8950 9800 0    50   ~ 0
 (PC14,15:\nlow current)
+Wire Notes Line
+	6450 5500 7350 5500
+Wire Notes Line
+	7350 5500 7350 5350
+Wire Notes Line
+	7350 5350 7100 5350
+Wire Notes Line
+	7600 4300 6950 4300
+Wire Notes Line
+	6950 4300 6950 5200
+Wire Notes Line
+	6950 5200 6450 5200
+Wire Notes Line
+	6450 5200 6450 5500
+Connection ~ 6700 5750
+Wire Wire Line
+	6700 5750 6950 5750
+Connection ~ 6700 5450
+Wire Wire Line
+	6700 5450 7050 5450
+Wire Wire Line
+	6550 5450 6700 5450
+Wire Wire Line
+	6550 5750 6700 5750
+Text Notes 6900 5100 2    50   ~ 0
+Note: guard ring\naround sensitive\ninput
+Text Notes 6100 3450 2    50   ~ 0
+Note: guard ring\naround sensitive\ninput
+Wire Notes Line
+	6600 3900 6600 3750
+Wire Notes Line
+	6600 3750 6350 3750
+Wire Notes Line
+	6350 3750 6350 3250
+Wire Notes Line
+	6350 3250 6850 3250
+Wire Notes Line
+	6850 3250 6850 2700
+Wire Notes Line
+	6850 2700 6200 2700
+Wire Notes Line
+	6200 2700 6200 3550
+Wire Notes Line
+	6200 3550 5700 3550
+Wire Notes Line
+	5700 3550 5700 3900
+Wire Notes Line
+	5700 3900 6600 3900
+Wire Notes Line
+	7600 4850 7100 4850
+Wire Notes Line
+	7600 4300 7600 4850
+Wire Notes Line
+	7100 4850 7100 5350
+$Comp
+L Jitter_Components:LOGO LOGO1
+U 1 1 5E3AD0B9
+P 15600 9200
+F 0 "LOGO1" H 15678 9200 50  0000 L CNN
+F 1 "LOGO" H 15678 9155 50  0001 L CNN
+F 2 "Jitter_Logos:Jitter" H 15600 9200 50  0001 C CNN
+F 3 "" H 15600 9200 50  0001 C CNN
+	1    15600 9200
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jitter_Components:LOGO LOGO2
+U 1 1 5E3B71E6
+P 15600 9400
+F 0 "LOGO2" H 15678 9400 50  0000 L CNN
+F 1 "LOGO" H 15678 9355 50  0001 L CNN
+F 2 "Jitter_Logos:Symbol_Jitter-Icon_CopperAndSilkScreenTop" H 15600 9400 50  0001 C CNN
+F 3 "" H 15600 9400 50  0001 C CNN
+	1    15600 9400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole MB1
+U 1 1 5E331FB3
+P 14200 9400
+F 0 "MB1" H 14300 9446 50  0000 L CNN
+F 1 "Mousebite" H 14300 9355 50  0000 L CNN
+F 2 "Jitter_Footprints:MouseBite_3.5mmx2.2mm_breakaway" H 14200 9400 50  0001 C CNN
+F 3 "~" H 14200 9400 50  0001 C CNN
+	1    14200 9400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole MB2
+U 1 1 5E347D11
+P 14200 9700
+F 0 "MB2" H 14300 9746 50  0000 L CNN
+F 1 "Mousebite" H 14300 9655 50  0000 L CNN
+F 2 "Jitter_Footprints:MouseBite_3.5mmx2.2mm_breakaway" H 14200 9700 50  0001 C CNN
+F 3 "~" H 14200 9700 50  0001 C CNN
+	1    14200 9700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole MB3
+U 1 1 5E348603
+P 14850 9400
+F 0 "MB3" H 14950 9446 50  0000 L CNN
+F 1 "Mousebite" H 14950 9355 50  0000 L CNN
+F 2 "Jitter_Footprints:MouseBite_3.5mmx2.2mm_breakaway" H 14850 9400 50  0001 C CNN
+F 3 "~" H 14850 9400 50  0001 C CNN
+	1    14850 9400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole MB4
+U 1 1 5E348609
+P 14850 9700
+F 0 "MB4" H 14950 9746 50  0000 L CNN
+F 1 "Mousebite" H 14950 9655 50  0000 L CNN
+F 2 "Jitter_Footprints:MouseBite_3.5mmx2.2mm_breakaway" H 14850 9700 50  0001 C CNN
+F 3 "~" H 14850 9700 50  0001 C CNN
+	1    14850 9700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole TH1
+U 1 1 5E3682FA
+P 12550 9400
+F 0 "TH1" H 12650 9446 50  0000 L CNN
+F 1 "ToolingHole" H 12650 9355 50  0000 L CNN
+F 2 "Jitter_Footprints:Tooling_hole_4mm_4.04mm_paste" H 12550 9400 50  0001 C CNN
+F 3 "~" H 12550 9400 50  0001 C CNN
+	1    12550 9400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole TH2
+U 1 1 5E368879
+P 12550 9700
+F 0 "TH2" H 12650 9746 50  0000 L CNN
+F 1 "ToolingHole" H 12650 9655 50  0000 L CNN
+F 2 "Jitter_Footprints:Tooling_hole_4mm_4.04mm_paste" H 12550 9700 50  0001 C CNN
+F 3 "~" H 12550 9700 50  0001 C CNN
+	1    12550 9700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole TH4
+U 1 1 5E368EB6
+P 13300 9700
+F 0 "TH4" H 13400 9746 50  0000 L CNN
+F 1 "ToolingHole" H 13400 9655 50  0000 L CNN
+F 2 "Jitter_Footprints:Tooling_hole_4mm_4.04mm_paste" H 13300 9700 50  0001 C CNN
+F 3 "~" H 13300 9700 50  0001 C CNN
+	1    13300 9700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole TH3
+U 1 1 5E369152
+P 13300 9400
+F 0 "TH3" H 13400 9446 50  0000 L CNN
+F 1 "ToolingHole" H 13400 9355 50  0000 L CNN
+F 2 "Jitter_Footprints:Tooling_hole_4mm_4.04mm_paste" H 13300 9400 50  0001 C CNN
+F 3 "~" H 13300 9400 50  0001 C CNN
+	1    13300 9400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jitter_Components:LOGO LOGO3
+U 1 1 5E3D6485
+P 15600 9600
+F 0 "LOGO3" H 15678 9600 50  0000 L CNN
+F 1 "LOGO" H 15678 9555 50  0001 L CNN
+F 2 "Jitter_Logos:Jitter" H 15600 9600 50  0001 C CNN
+F 3 "" H 15600 9600 50  0001 C CNN
+	1    15600 9600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Jitter_Components:LOGO LOGO4
+U 1 1 5E3D6553
+P 15600 9800
+F 0 "LOGO4" H 15678 9800 50  0000 L CNN
+F 1 "LOGO" H 15678 9755 50  0001 L CNN
+F 2 "Jitter_Logos:Symbol_Jitter-Icon_CopperAndSilkScreenTop" H 15600 9800 50  0001 C CNN
+F 3 "" H 15600 9800 50  0001 C CNN
+	1    15600 9800
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
