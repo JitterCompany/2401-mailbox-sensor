@@ -2746,14 +2746,14 @@ Wire Wire Line
 	14350 5550 14450 5550
 Connection ~ 14450 5550
 $Comp
-L 2401-pcb-rescue:DPS422-Jitter_Components U5
+L Jitter_Components:DPS422 U5
 U 1 1 5E20A247
-P 14600 5050
-F 0 "U5" H 14250 5500 50  0000 L CNN
-F 1 "DPS422" H 14550 5250 50  0000 L CNN
-F 2 "Package_LGA:Bosch_LGA-8_2x2.5mm_P0.65mm_ClockwisePinNumbering" H 14600 5900 118 0001 C CNN
-F 3 "https://www.infineon.com/dgdl/Infineon-DPS422-DS-v01_03-EN.pdf?fileId=5546d46264fee02f01650249502c1ddf" H 14600 5900 118 0001 C CNN
-	1    14600 5050
+P 14550 5050
+F 0 "U5" H 14600 5700 50  0000 L CNN
+F 1 "DPS422" H 14600 5600 50  0000 L CNN
+F 2 "Package_LGA:Bosch_LGA-8_2x2.5mm_P0.65mm_ClockwisePinNumbering" H 14550 5900 118 0001 C CNN
+F 3 "https://www.infineon.com/dgdl/Infineon-DPS422-DS-v01_03-EN.pdf?fileId=5546d46264fee02f01650249502c1ddf" H 14550 5900 118 0001 C CNN
+	1    14550 5050
 	1    0    0    -1  
 $EndComp
 Text Notes 13300 3600 0    118  ~ 24
