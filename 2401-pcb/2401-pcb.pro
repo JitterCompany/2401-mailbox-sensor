@@ -1,4 +1,4 @@
-update=Wed 29 Jan 2020 11:15:29 AM CET
+update=2020 January 30, Thursday 12:16:13
 version=1
 last_client=kicad
 [general]
@@ -238,7 +238,7 @@ dPairGap=0.25
 dPairViaGap=0.25
 [schematic_editor]
 version=1
-PageLayoutDescrFile=/media/jitter/jitter_kicad_ws.kicad_wks
+PageLayoutDescrFile=jitter_kicad_ws.kicad_wks
 PlotDirectoryName=
 SubpartIdSeparator=0
 SubpartFirstId=65
