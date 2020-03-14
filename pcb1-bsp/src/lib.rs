@@ -1,26 +1,28 @@
-
 #![no_std]
 
-use switch_hal::{ActiveHigh, Switch};
+pub use switch_hal;
+use switch_hal::{ActiveHigh, Switch, IntoSwitch, OutputSwitch};
 
 use stm32g0xx_hal::{
     prelude::*,
     stm32,
     gpio::gpiob,
     gpio::{Output, PushPull},
-    serial::Config
 };
 
 
+type RedLed = Switch<gpiob::PB5<Output<PushPull>>, ActiveHigh>;
+type GreenLed = Switch<gpiob::PB9<Output<PushPull>>, ActiveHigh>;
+
 pub struct Leds {
-    pub led_red: gpiob::PB5<Output<PushPull>>,
-    pub led_green: gpiob::PB9<Output<PushPull>>
+    pub led_red: RedLed,
+    pub led_green: GreenLed
 }
 
 impl Leds {
 
     /// Initializes the user LEDs to OFF
-    pub fn new(pb5: gpiob::PB5<Output<PushPull>>, pb9: gpiob::PB9<Output<PushPull>>) -> Self {
+    pub fn new(pb5: RedLed, pb9: GreenLed) -> Self {
         Self {
             led_red: pb5,
             led_green: pb9
@@ -31,7 +33,7 @@ impl Leds {
 
 
 pub struct Board {
-    leds: Leds
+    pub leds: Leds
 }
 
 impl Board {
@@ -41,24 +43,13 @@ impl Board {
         let dp = stm32::Peripherals::take().expect("cannot take peripherals");
         let mut rcc = dp.RCC.constrain();
         let gpiob = dp.GPIOB.split(&mut rcc);
-        let pb5 = gpiob.pb5.into_push_pull_output();
-        let pb9 = gpiob.pb9.into_push_pull_output();
+        let pb5 = gpiob.pb5.into_push_pull_output().into_active_high_switch();
+        let pb9 = gpiob.pb9.into_push_pull_output().into_active_high_switch();
 
-        let leds = Leds::new(pb5, pb9);
-        // led1.set_high().unwrap();
-
-        // led2.set_low().unwrap();
-
-        // return ne
+        let mut leds = Leds::new(pb5, pb9);
+        leds.led_green.off().ok();
+        leds.led_red.off().ok();
 
         Board {leds}
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }
