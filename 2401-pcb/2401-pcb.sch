@@ -19,7 +19,7 @@ U 1 1 5E1FBE20
 P 13050 8050
 F 0 "U9" H 13694 8096 50  0000 L CNN
 F 1 "AT25SF641-SUB-T" H 13694 8005 50  0000 L CNN
-F 2 "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" H 13050 7450 50  0001 C CNN
+F 2 "Package_SO:SOIC-8_5.275x5.275mm_P1.27mm" H 13050 7450 50  0001 C CNN
 F 3 "http://www.farnell.com/datasheets/2720345.pdf" H 13050 8050 50  0001 C CNN
 F 4 "AT25SF641-SUB-T" H 13050 8050 50  0001 C CNN "MPN"
 F 5 "2988514" H 13050 8050 50  0001 C CNN "Farnell"
@@ -990,7 +990,7 @@ U 1 1 5E3682FA
 P 12550 9400
 F 0 "TH1" H 12650 9446 50  0000 L CNN
 F 1 "DNI" H 12650 9355 50  0000 L CNN
-F 2 "Jitter_Footprints:Tooling_hole_4mm_4.04mm_paste" H 12550 9400 50  0001 C CNN
+F 2 "Jitter_Footprints:Tooling_hole_4.1mm_aisler" H 12550 9400 50  0001 C CNN
 F 3 "~" H 12550 9400 50  0001 C CNN
 	1    12550 9400
 	1    0    0    -1  
@@ -1001,7 +1001,7 @@ U 1 1 5E368879
 P 12550 9700
 F 0 "TH2" H 12650 9746 50  0000 L CNN
 F 1 "DNI" H 12650 9655 50  0000 L CNN
-F 2 "Jitter_Footprints:Tooling_hole_4mm_4.04mm_paste" H 12550 9700 50  0001 C CNN
+F 2 "Jitter_Footprints:Tooling_hole_4.1mm_aisler" H 12550 9700 50  0001 C CNN
 F 3 "~" H 12550 9700 50  0001 C CNN
 	1    12550 9700
 	1    0    0    -1  
@@ -1012,7 +1012,7 @@ U 1 1 5E368EB6
 P 13300 9700
 F 0 "TH4" H 13400 9746 50  0000 L CNN
 F 1 "DNI" H 13400 9655 50  0000 L CNN
-F 2 "Jitter_Footprints:Tooling_hole_4mm_4.04mm_paste" H 13300 9700 50  0001 C CNN
+F 2 "Jitter_Footprints:Tooling_hole_4.1mm_aisler" H 13300 9700 50  0001 C CNN
 F 3 "~" H 13300 9700 50  0001 C CNN
 	1    13300 9700
 	1    0    0    -1  
@@ -1023,7 +1023,7 @@ U 1 1 5E369152
 P 13300 9400
 F 0 "TH3" H 13400 9446 50  0000 L CNN
 F 1 "DNI" H 13400 9355 50  0000 L CNN
-F 2 "Jitter_Footprints:Tooling_hole_4mm_4.04mm_paste" H 13300 9400 50  0001 C CNN
+F 2 "Jitter_Footprints:Tooling_hole_4.1mm_aisler" H 13300 9400 50  0001 C CNN
 F 3 "~" H 13300 9400 50  0001 C CNN
 	1    13300 9400
 	1    0    0    -1  
