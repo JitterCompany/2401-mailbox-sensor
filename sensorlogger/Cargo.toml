@@ -16,6 +16,7 @@ dps422 = "0.1.1"
 lis3dh = "0.1.0"
 spi-memory = "0.2.0"
 shared-bus = {version="0.1.4", features=["cortexm"]}
+vl6180x = {git="https://github.com/devboard-io/vl6180x-rs"}
 
 [dependencies.embedded-hal]
 version = "0.2.3"
