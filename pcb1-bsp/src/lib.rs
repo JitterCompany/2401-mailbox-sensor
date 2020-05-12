@@ -1,5 +1,8 @@
 #![no_std]
 
+// examples: https://github.com/rubberduck203/stm32f3-discovery
+// https://github.com/nrf-rs/nrf52-hal
+
 pub use switch_hal;
 use switch_hal::{ActiveHigh, Switch, IntoSwitch, OutputSwitch};
 
