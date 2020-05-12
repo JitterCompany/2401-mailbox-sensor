@@ -16,7 +16,7 @@ use stm32g0xx_hal::{
     stm32,
     serial::Config,
     i2c,
-    analog::adc::{Precision, SampleTime, VTemp},
+    analog::adc::{Precision, SampleTime},
 };
 
 use dps422::{DPS422, self};
@@ -64,8 +64,6 @@ fn main() -> ! {
     let mut phototransistor1_pin = gpioa.pa1.into_analog();
     let mut photodiode1_pin = gpioa.pa4.into_analog();
     let mut photodiode2_pin = gpioa.pa2.into_analog();
-    let mut vtemp = VTemp::new();
-    vtemp.enable(&mut adc);
 
     // I2C pins
     let scl = gpiob.pb6.into_open_drain_output();
@@ -120,12 +118,7 @@ fn main() -> ! {
         let pt2: u32 = adc.read(&mut phototransistor2_pin).expect("adc read failed");
         let pd1: u32 = adc.read(&mut photodiode1_pin).expect("adc read failed");
         let pd2: u32 = adc.read(&mut photodiode2_pin).expect("adc read failed");
-        let temp: u32 = adc.read(&mut vtemp).expect("temperature read failed");
 
-        // let u = u_raw.saturating_sub(32) as f32 / 4_096_f32 * 3.3;
-        let temp = temp / 42;
-
-        writeln!(usart, "temp: {}", temp).unwrap();
         writeln!(usart, "photo transistors: {},  {}", pt1, pt2).unwrap();
         writeln!(usart, "photo diodes: {},  {}", pd1, pd2).unwrap();
 
