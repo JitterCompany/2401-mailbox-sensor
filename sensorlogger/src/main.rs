@@ -15,7 +15,8 @@ use stm32g0xx_hal::{
     prelude::*,
     stm32,
     serial::Config,
-    i2c
+    i2c,
+    analog::adc::{Precision, SampleTime, VTemp},
 };
 
 use dps422::{DPS422, self};
@@ -50,6 +51,21 @@ fn main() -> ! {
         .unwrap();
 
     writeln!(usart, "Hallo, brievenbus!\n").unwrap();
+
+    let mut adc = dp.ADC.constrain(&mut rcc);
+    adc.set_sample_time(SampleTime::T_2);
+    adc.set_precision(Precision::B_12);
+
+    // photo transistor 1 = PA1
+    // photo transistor 2 = PA0
+    // photo diode 1 =      PA4
+    // photo diode 2 =      PA2
+    let mut phototransistor2_pin = gpioa.pa0.into_analog();
+    let mut phototransistor1_pin = gpioa.pa1.into_analog();
+    let mut photodiode1_pin = gpioa.pa4.into_analog();
+    let mut photodiode2_pin = gpioa.pa2.into_analog();
+    let mut vtemp = VTemp::new();
+    vtemp.enable(&mut adc);
 
     // I2C pins
     let scl = gpiob.pb6.into_open_drain_output();
@@ -99,6 +115,19 @@ fn main() -> ! {
 
         let accel = lis3dh.acceleration().unwrap();
         writeln!(usart, "accel = {}, {}, {}", accel.x, accel.y, accel.z).unwrap();
+
+        let pt1: u32 = adc.read(&mut phototransistor1_pin).expect("adc read failed");
+        let pt2: u32 = adc.read(&mut phototransistor2_pin).expect("adc read failed");
+        let pd1: u32 = adc.read(&mut photodiode1_pin).expect("adc read failed");
+        let pd2: u32 = adc.read(&mut photodiode2_pin).expect("adc read failed");
+        let temp: u32 = adc.read(&mut vtemp).expect("temperature read failed");
+
+        // let u = u_raw.saturating_sub(32) as f32 / 4_096_f32 * 3.3;
+        let temp = temp / 42;
+
+        writeln!(usart, "temp: {}", temp).unwrap();
+        writeln!(usart, "photo transistors: {},  {}", pt1, pt2).unwrap();
+        writeln!(usart, "photo diodes: {},  {}", pd1, pd2).unwrap();
 
         delay.delay_ms(500_u16);
 
