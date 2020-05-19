@@ -16,14 +16,31 @@ use stm32g0xx_hal::{
     stm32,
     serial::Config,
     i2c,
+    spi,
     analog::adc::{Precision, SampleTime},
 };
+
+use spi_memory::prelude::*;
+use spi_memory::series25::Flash;
 
 use dps422::{DPS422, self};
 use vl6180x::{VL6180X};
 use lis3dh::{Lis3dh, accelerometer::Accelerometer};
 
 use shared_bus;
+
+mod log_storage;
+use log_storage::StorageEngine;
+
+use embedded_hal::blocking::spi::Transfer;
+use embedded_hal::digital::v2::OutputPin;
+
+use core::convert::Infallible;
+
+
+// fn consume_flash<E>(flash: impl BlockDevice<u8, Transfer<u8, Error=Infallible>, OutputPin<Error=Infallible>>) {
+
+// }
 
 #[entry]
 fn main() -> ! {
@@ -52,6 +69,31 @@ fn main() -> ! {
 
     writeln!(usart, "Hallo, brievenbus!\n").unwrap();
 
+
+    let spi = {
+
+        let sck = gpioa.pa5;
+        let miso = gpioa.pa6;
+        let mosi = gpioa.pa7;
+        dp.SPI1.spi(
+            (sck, miso, mosi),
+            spi::MODE_0,
+            1000.khz(),
+            &mut rcc)
+    };
+
+    let mut flash_cs = gpioa.pa8.into_push_pull_output();
+    flash_cs.set_high().unwrap();
+    let mut flash = Flash::init(spi, flash_cs).unwrap();
+    let id = flash.read_jedec_id().unwrap();
+    writeln!(usart, "Init flash with id: {:?}\n", id).unwrap();
+
+    let storage = StorageEngine::new(flash);
+    // consume_flash(flash);
+
+    // flash.write_bytes()
+
+
     let mut adc = dp.ADC.constrain(&mut rcc);
     adc.set_sample_time(SampleTime::T_2);
     adc.set_precision(Precision::B_12);
@@ -64,6 +106,9 @@ fn main() -> ! {
     let mut phototransistor1_pin = gpioa.pa1.into_analog();
     let mut photodiode1_pin = gpioa.pa4.into_analog();
     let mut photodiode2_pin = gpioa.pa2.into_analog();
+
+    let mut vbat_pin = gpiob.pb2.into_analog();
+
 
     // I2C pins
     let scl = gpiob.pb6.into_open_drain_output();
@@ -119,8 +164,11 @@ fn main() -> ! {
         let pd1: u32 = adc.read(&mut photodiode1_pin).expect("adc read failed");
         let pd2: u32 = adc.read(&mut photodiode2_pin).expect("adc read failed");
 
+        let vbat: u32 = adc.read(&mut vbat_pin).expect("adc read failed");
+
         writeln!(usart, "photo transistors: {},  {}", pt1, pt2).unwrap();
         writeln!(usart, "photo diodes: {},  {}", pd1, pd2).unwrap();
+        writeln!(usart, "vbat: {} mV?", vbat*2*3000/4096).unwrap();
 
         delay.delay_ms(500_u16);
 
