@@ -20,7 +20,6 @@ use stm32g0xx_hal::{
     analog::adc::{Precision, SampleTime},
 };
 
-use spi_memory::prelude::*;
 use spi_memory::series25::Flash;
 
 use dps422::{DPS422, self};
@@ -32,10 +31,7 @@ use shared_bus;
 mod log_storage;
 use log_storage::StorageEngine;
 
-use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
-
-use core::convert::Infallible;
 
 
 // fn consume_flash<E>(flash: impl BlockDevice<u8, Transfer<u8, Error=Infallible>, OutputPin<Error=Infallible>>) {
@@ -88,7 +84,7 @@ fn main() -> ! {
     let id = flash.read_jedec_id().unwrap();
     writeln!(usart, "Init flash with id: {:?}\n", id).unwrap();
 
-    let storage = StorageEngine::new(flash);
+    let storage = StorageEngine::new(flash, 0x800000, 0x1000, 0x100);
     // consume_flash(flash);
 
     // flash.write_bytes()
