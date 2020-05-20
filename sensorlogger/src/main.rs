@@ -33,10 +33,13 @@ use log_storage::StorageEngine;
 
 use embedded_hal::digital::v2::OutputPin;
 
+// use serde::{Serialize, Deserialize};
+use postcard::{from_bytes};
+// use heapless::{Vec, consts::*};
 
-// fn consume_flash<E>(flash: impl BlockDevice<u8, Transfer<u8, Error=Infallible>, OutputPin<Error=Infallible>>) {
+mod sensors;
+use sensors::SensorData;
 
-// }
 
 #[entry]
 fn main() -> ! {
@@ -82,12 +85,23 @@ fn main() -> ! {
     flash_cs.set_high().unwrap();
     let mut flash = Flash::init(spi, flash_cs).unwrap();
     let id = flash.read_jedec_id().unwrap();
-    writeln!(usart, "Init flash with id: {:?}\n", id).unwrap();
+    let mut storage = StorageEngine::new(flash, 0x800000, 0x1000, 0x1000);
+    let offset = storage.init().unwrap();
 
-    let storage = StorageEngine::new(flash, 0x800000, 0x1000, 0x100);
-    // consume_flash(flash);
+    writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset).unwrap();
 
-    // flash.write_bytes()
+    // storage.erase(0).unwrap();
+    // loop {}
+
+    let mut readbuf = [0u8;27];
+    storage.read(0, &mut readbuf).unwrap();
+
+    writeln!(usart, "read from flash: {:?}\n", readbuf).unwrap();
+
+    let deserialized: SensorData = from_bytes(&readbuf[1..]).unwrap();
+    writeln!(usart, "deserialized sensors: {:?}", deserialized).unwrap();
+
+
 
 
     let mut adc = dp.ADC.constrain(&mut rcc);
@@ -132,7 +146,7 @@ fn main() -> ! {
 
     dps.trigger_measurement(true, true, false).unwrap();
     vl6180x.start_ranging().unwrap();
-
+    let mut sensordata = SensorData::new();
     loop {
 
         if dps.data_ready().unwrap() {
@@ -141,32 +155,50 @@ fn main() -> ! {
             let temp = dps.read_temp_calibrated().unwrap();
             writeln!(usart, "pressure: {:.1} [kPa]\t temp: {:.1} [˚C]", pressure, temp).unwrap();
             dps.trigger_measurement(true, true, false).unwrap();
+            sensordata.pressure(pressure);
+            sensordata.temp(temp);
         }
 
         let status = vl6180x.int_status().unwrap();
         if (status & 0b100) == 0b100 {
             let range = vl6180x.read_range().unwrap();
-            writeln!(usart, "range = {} [mm]\n", range).unwrap();
+            // writeln!(usart, "range = {} [mm]\n", range).unwrap();
             vl6180x.clear_int().unwrap();
             vl6180x.start_ranging().unwrap();
             led2.toggle().unwrap();
+            sensordata.distance(range);
         }
 
         let accel = lis3dh.acceleration().unwrap();
         writeln!(usart, "accel = {}, {}, {}", accel.x, accel.y, accel.z).unwrap();
+        sensordata.accel_x(accel.x);
+        sensordata.accel_y(accel.y);
+        sensordata.accel_z(accel.z);
 
-        let pt1: u32 = adc.read(&mut phototransistor1_pin).expect("adc read failed");
-        let pt2: u32 = adc.read(&mut phototransistor2_pin).expect("adc read failed");
-        let pd1: u32 = adc.read(&mut photodiode1_pin).expect("adc read failed");
-        let pd2: u32 = adc.read(&mut photodiode2_pin).expect("adc read failed");
+        let pt1: u16 = adc.read(&mut phototransistor1_pin).expect("adc read failed");
+        let pt2: u16 = adc.read(&mut phototransistor2_pin).expect("adc read failed");
+        let pd1: u16 = adc.read(&mut photodiode1_pin).expect("adc read failed");
+        let pd2: u16 = adc.read(&mut photodiode2_pin).expect("adc read failed");
+        sensordata.photo_t1(pt1);
+        sensordata.photo_t2(pt2);
+        sensordata.photo_d1(pd1);
+        sensordata.photo_d2(pd2);
 
-        let vbat: u32 = adc.read(&mut vbat_pin).expect("adc read failed");
+        let vbat: u16 = adc.read(&mut vbat_pin).expect("adc read failed");
+        sensordata.vbat(vbat);
 
-        writeln!(usart, "photo transistors: {},  {}", pt1, pt2).unwrap();
-        writeln!(usart, "photo diodes: {},  {}", pd1, pd2).unwrap();
-        writeln!(usart, "vbat: {} mV?", vbat*2*3000/4096).unwrap();
+        // writeln!(usart, "photo transistors: {},  {}", pt1, pt2).unwrap();
+        // writeln!(usart, "photo diodes: {},  {}", pd1, pd2).unwrap();
+        // writeln!(usart, "vbat: {} mV?", vbat*2*3000/4096).unwrap();
 
-        delay.delay_ms(500_u16);
+
+        if sensordata.ready() {
+            writeln!(usart, "write to flash: {:?}", sensordata).unwrap();
+            let _res = storage.write(sensordata).unwrap();
+            sensordata = SensorData::new();
+        }
+
+        delay.delay_ms(5000_u16);
 
     }
 }
