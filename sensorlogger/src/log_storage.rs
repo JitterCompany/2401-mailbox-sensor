@@ -11,6 +11,7 @@ use postcard::{from_bytes, to_vec};
 use heapless::{Vec, consts::*};
 
 use core::mem::size_of;
+use core::cmp::min;
 
 enum EraseMode {
     Never = 0,        // when full, all attempted writes fail
@@ -23,7 +24,7 @@ pub struct StorageEngine<CHIP, SPI, CS> {
     size_bytes: u32,
     erase_block_size_bytes: u32,
     page_size_bytes: u32,
-    offset: u32,
+    waddr: u32,
     erase_mode: EraseMode,
     _a: PhantomData<SPI>,
     _b: PhantomData<CS>,
@@ -44,7 +45,7 @@ where
             size_bytes: size,
             erase_block_size_bytes: erase_block_size,
             page_size_bytes: page_size,
-            offset: 0,
+            waddr: 0,
             erase_mode: EraseMode::Never,
             _a: PhantomData,
             _b: PhantomData
@@ -70,7 +71,7 @@ where
             offset += packet_size;
         }
 
-        self.offset = offset;
+        self.waddr = offset;
 
         Ok(offset)
     }
@@ -89,20 +90,34 @@ where
         // append data
         packet.extend_from_slice(&vec).unwrap();
 
-        self.flash.write_bytes(self.offset, &mut packet)?;
+        let mut remaining: u32 = packet.len() as u32;
+        if (self.waddr + remaining) > (self.size_bytes - 1) {
+            // todo throw error, flash full
+            return Ok(self.size_bytes);
+        }
+        let mut buffer_offset: usize = 0;
+        while remaining > 0 {
 
-        self.offset += packet.len() as u32;
+            let page_offset: u32 = self.waddr & (self.page_size_bytes-1);
+            let to_write = min(remaining, self.page_size_bytes as u32 - page_offset) as usize;
+            let end = buffer_offset + to_write;
+            self.flash.write_bytes(self.waddr, &mut packet[buffer_offset..end])?;
 
-        Ok(self.offset)
+            self.waddr += to_write as u32;
+            buffer_offset += to_write;
+            remaining -= to_write as u32;
+        }
+
+        Ok(self.waddr)
     }
 
 
-    pub fn read(&mut self, offset: u32, buffer: &mut [u8]) -> Result<(), spi_memory::Error<SPI, CS>>{
+    pub fn read(&mut self, addr: u32, buffer: &mut [u8]) -> Result<(), spi_memory::Error<SPI, CS>>{
 
-        if offset > self.size_bytes {
+        if addr > self.size_bytes {
             // todo throw error
         }
-        self.flash.read(offset, buffer)
+        self.flash.read(addr, buffer)
     }
 }
 

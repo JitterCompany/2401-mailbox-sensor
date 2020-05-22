@@ -91,8 +91,8 @@ fn main() -> ! {
     writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset).unwrap();
 
 
-    storage.erase(0).unwrap();
-    storage.erase(1).unwrap();
+    // storage.erase(0).unwrap();
+    // storage.erase(1).unwrap();
     // loop {}
 
     let mut readbuf = [0u8;27];
