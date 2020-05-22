@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use spi_memory::{BlockDevice, Read};
+use spi_memory::{BlockDevice, Read, self};
 use embedded_hal::blocking::spi;
 use embedded_hal::digital::v2::OutputPin;
 use core::marker::PhantomData;
@@ -10,8 +10,8 @@ use crate::sensors::SensorData;
 use postcard::{from_bytes, to_vec};
 use heapless::{Vec, consts::*};
 
-use core::mem::size_of;
 use core::cmp::min;
+use core::fmt::{self, Debug};
 
 enum EraseMode {
     Never = 0,        // when full, all attempted writes fail
@@ -26,14 +26,65 @@ pub struct StorageEngine<CHIP, SPI, CS> {
     page_size_bytes: u32,
     waddr: u32,
     erase_mode: EraseMode,
-    _a: PhantomData<SPI>,
-    _b: PhantomData<CS>,
+    _spi: PhantomData<SPI>,
+    _cs: PhantomData<CS>,
 }
 
+pub enum Error<SPI: spi::Transfer<u8>, CS: OutputPin> {
 
-impl<CHIP, SPI, CS, E, PinError> StorageEngine<CHIP, SPI, CS>
+    /// Errors from spi-memory crate (spi, gpio, protocol)
+    SpiMem(spi_memory::Error<SPI, CS>),
+
+    /// Packet header is not as expected
+    FlashFull,
+
+    /// Packet header is not as expected
+    CorruptPacket,
+
+    /// Address out of bounds
+    OutOfBounds,
+}
+
+impl<SPI: spi::Transfer<u8>, CS: OutputPin> core::convert::From<spi_memory::Error<SPI, CS>> for Error<SPI, CS> {
+    fn from(error: spi_memory::Error<SPI, CS>) -> Self {
+        Error::SpiMem(error)
+    }
+}
+
+impl<SPI: spi::Transfer<u8>, CS: OutputPin> fmt::Debug for Error<SPI, CS>
 where
-    SPI: spi::Transfer<u8, Error=E>,
+    SPI::Error: Debug,
+    CS::Error: Debug,
+{
+
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::FlashFull => write!(f, "Error::FlashFull"),
+            Error::OutOfBounds => write!(f, "Error::OutOfBounds"),
+            Error::CorruptPacket => write!(f, "Error::CorruptPacket"),
+            Error::SpiMem(spi_mem) => write!(f, "Error::spi-memory: {:?}", spi_mem)
+        }
+    }
+}
+
+// #[derive(Debug)]
+// enum Error<E> {
+//     FlashFull,
+//     CorruptPacket,
+//     SpiMem(E),
+// }
+
+// impl<E> core::convert::From<E> for Error<E> {
+//     fn from(error: E) -> Self {
+//         Error::SpiMem(error)
+//     }
+// }
+
+
+
+impl<CHIP, SPI, CS, CommError, PinError> StorageEngine<CHIP, SPI, CS>
+where
+    SPI: spi::Transfer<u8, Error=CommError>,
     CS: OutputPin<Error = PinError>,
     CHIP: BlockDevice<u32, SPI, CS> + Read<u32, SPI, CS>
 {
@@ -47,15 +98,17 @@ where
             page_size_bytes: page_size,
             waddr: 0,
             erase_mode: EraseMode::Never,
-            _a: PhantomData,
-            _b: PhantomData
+            _spi: PhantomData,
+            _cs: PhantomData
         }
     }
 
 
-    pub fn init(&mut self) -> Result<u32, spi_memory::Error<SPI, CS>> {
+//Error<<SpiDevice<SPI, NCS> as device::Device>::Error>>
 
-        let packet_size: u32 = (size_of::<SensorData>() as u32) + 1;
+    pub fn init(&mut self) -> Result<u32, Error<SPI, CS>> {
+
+        let packet_size: u32 = SensorData::size() + 1;
 
         let mut offset: u32 = 0;
 
@@ -76,11 +129,11 @@ where
         Ok(offset)
     }
 
-    pub fn erase(&mut self, block: u32) -> Result<(), spi_memory::Error<SPI, CS>> {
-        self.flash.erase_sectors(block, 1 as usize)
+    pub fn erase(&mut self, block: u32) -> Result<(), Error<SPI, CS>> {
+        self.flash.erase_sectors(block, 1 as usize).map_err(Error::SpiMem)
     }
 
-    pub fn write(&mut self, sensor_data: SensorData)  -> Result<u32, spi_memory::Error<SPI, CS>> {
+    pub fn write(&mut self, sensor_data: SensorData)  -> Result<u32, Error<SPI, CS>> {
 
         let vec: Vec<u8, U26> = to_vec(&sensor_data).unwrap(); // todo: no unwrap
 
@@ -93,7 +146,7 @@ where
         let mut remaining: u32 = packet.len() as u32;
         if (self.waddr + remaining) > (self.size_bytes - 1) {
             // todo throw error, flash full
-            return Ok(self.size_bytes);
+            return Err(Error::FlashFull);
         }
         let mut buffer_offset: usize = 0;
         while remaining > 0 {
@@ -112,12 +165,31 @@ where
     }
 
 
-    pub fn read(&mut self, addr: u32, buffer: &mut [u8]) -> Result<(), spi_memory::Error<SPI, CS>>{
+    pub fn read(&mut self, addr: u32, buffer: &mut [u8]) -> Result<(), Error<SPI, CS>>{
 
         if addr > self.size_bytes {
             // todo throw error
+            return Err(Error::FlashFull);
         }
-        self.flash.read(addr, buffer)
+        self.flash.read(addr, buffer)?;
+        Ok(())
+    }
+
+    pub fn read_sensors(&mut self, index: u32) -> Result<SensorData, Error<SPI, CS>> {
+
+        const ELEM_SIZE: u32 = SensorData::size() + 1;
+        let address = index * ELEM_SIZE;
+
+        let mut buf: [u8; ELEM_SIZE as usize] = [0; ELEM_SIZE as usize];
+        self.read(address, &mut buf)?;
+
+        if buf[0] == PACKET_HEADER {
+            let deserialized: SensorData = from_bytes(&buf[1..]).unwrap(); // todo add error
+            Ok(deserialized)
+        } else {
+            Err(Error::CorruptPacket)
+        }
+
     }
 }
 

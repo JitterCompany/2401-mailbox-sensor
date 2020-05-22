@@ -106,6 +106,7 @@ fn main() -> ! {
 
 
 
+
     let mut adc = dp.ADC.constrain(&mut rcc);
     adc.set_sample_time(SampleTime::T_2);
     adc.set_precision(Precision::B_12);

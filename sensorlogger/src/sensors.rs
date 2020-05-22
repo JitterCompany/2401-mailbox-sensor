@@ -36,6 +36,11 @@ impl SensorData {
         }
     }
 
+    pub const fn size() -> u32 {
+        //size_of::<SensorData>() as u32 // not const accorindg to rustc...
+        26
+    }
+
     pub fn ready(&self) -> bool {
         let mut count = 0;
         if self.pressure != 0.0 {
