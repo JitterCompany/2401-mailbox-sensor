@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 
+#[repr(C)]
 #[repr(packed(2))]
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 pub struct SensorData {

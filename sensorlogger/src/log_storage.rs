@@ -21,7 +21,7 @@ const PACKET_HEADER: u8 = 0xE0;
 pub struct StorageEngine<CHIP, SPI, CS> {
     flash: CHIP,
     size_bytes: u32,
-    block_size_bytes: u32,
+    erase_block_size_bytes: u32,
     page_size_bytes: u32,
     offset: u32,
     erase_mode: EraseMode,
@@ -37,12 +37,12 @@ where
     CHIP: BlockDevice<u32, SPI, CS> + Read<u32, SPI, CS>
 {
 
-    pub fn new(flash: CHIP, size: u32, block_size: u32, page_size: u32) -> Self {
+    pub fn new(flash: CHIP, size: u32, erase_block_size: u32, page_size: u32) -> Self {
 
         Self {
             flash: flash,
             size_bytes: size,
-            block_size_bytes: block_size,
+            erase_block_size_bytes: erase_block_size,
             page_size_bytes: page_size,
             offset: 0,
             erase_mode: EraseMode::Never,
@@ -79,7 +79,7 @@ where
         self.flash.erase_sectors(block, 1 as usize)
     }
 
-    pub fn write(&mut self, sensor_data: SensorData)  -> Result<Vec<u8, U27>, spi_memory::Error<SPI, CS>> {
+    pub fn write(&mut self, sensor_data: SensorData)  -> Result<u32, spi_memory::Error<SPI, CS>> {
 
         let vec: Vec<u8, U26> = to_vec(&sensor_data).unwrap(); // todo: no unwrap
 
@@ -93,7 +93,7 @@ where
 
         self.offset += packet.len() as u32;
 
-        Ok(packet)
+        Ok(self.offset)
     }
 
 

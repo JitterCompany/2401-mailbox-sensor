@@ -85,12 +85,14 @@ fn main() -> ! {
     flash_cs.set_high().unwrap();
     let mut flash = Flash::init(spi, flash_cs).unwrap();
     let id = flash.read_jedec_id().unwrap();
-    let mut storage = StorageEngine::new(flash, 0x800000, 0x1000, 0x1000);
+    let mut storage = StorageEngine::new(flash, 0x800000, 0x1000, 0x100);
     let offset = storage.init().unwrap();
 
     writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset).unwrap();
 
-    // storage.erase(0).unwrap();
+
+    storage.erase(0).unwrap();
+    storage.erase(1).unwrap();
     // loop {}
 
     let mut readbuf = [0u8;27];
@@ -193,12 +195,15 @@ fn main() -> ! {
 
 
         if sensordata.ready() {
+            let offset = storage.init().unwrap();
+            writeln!(usart, "found offset {}", offset).unwrap();
             writeln!(usart, "write to flash: {:?}", sensordata).unwrap();
-            let _res = storage.write(sensordata).unwrap();
+            let offset = storage.write(sensordata).unwrap();
+            writeln!(usart, "new offset: {}", offset).unwrap();
             sensordata = SensorData::new();
         }
 
-        delay.delay_ms(5000_u16);
+        delay.delay_ms(2000_u16);
 
     }
 }
