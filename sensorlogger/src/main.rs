@@ -85,10 +85,11 @@ fn main() -> ! {
     flash_cs.set_high().unwrap();
     let mut flash = Flash::init(spi, flash_cs).unwrap();
     let id = flash.read_jedec_id().unwrap();
-    let mut storage = StorageEngine::new(flash, 0x800000, 0x1000, 0x100);
+    let flash_size = 0x800000;
+    let mut storage = StorageEngine::new(flash, flash_size, 0x1000, 0x100);
     let offset = storage.init().unwrap();
 
-    writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset).unwrap();
+    writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset  / (SensorData::size() + 1)).unwrap();
 
 
     // storage.erase(0).unwrap();
@@ -103,7 +104,16 @@ fn main() -> ! {
     let deserialized: SensorData = from_bytes(&readbuf[1..]).unwrap();
     writeln!(usart, "deserialized sensors: {:?}", deserialized).unwrap();
 
-
+    let mut i = 0u32;
+    let n  = flash_size / (SensorData::size() + 1);
+    while i < n {
+        match storage.read_sensors(i) {
+            Ok(sensor) => writeln!(usart, "{}, {:?}", i, sensor).unwrap(),
+            Err(_err) => break,
+        };
+        i += 1;
+    }
+    writeln!(usart, "Mem dump done").unwrap();
 
 
 
@@ -135,11 +145,11 @@ fn main() -> ! {
 
     let manager = shared_bus::CortexMBusManager::new(i2c);
 
-    let mut dps = DPS422::new(manager.acquire(), 0x76, &dps422::Config::new()).unwrap();
+    let mut dps = DPS422::new(manager.acquire(), 0x76, &dps422::Config::new()).expect("dps422 failed to intialize");
 
     writeln!(usart, "DPS422 init done").unwrap();
 
-    let mut vl6180x = VL6180X::new(manager.acquire()).unwrap();
+    let mut vl6180x = VL6180X::new(manager.acquire()).expect("vl6180x failed to intialize");
     writeln!(usart, "VL6180X init done..\n").unwrap();
 
     let mut lis3dh = Lis3dh::new(manager.acquire(), 0x19).unwrap();

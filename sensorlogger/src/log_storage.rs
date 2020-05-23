@@ -7,7 +7,7 @@ use core::marker::PhantomData;
 
 use crate::sensors::SensorData;
 
-use postcard::{from_bytes, to_vec};
+use postcard::{self, from_bytes, to_vec};
 use heapless::{Vec, consts::*};
 
 use core::cmp::min;
@@ -43,11 +43,28 @@ pub enum Error<SPI: spi::Transfer<u8>, CS: OutputPin> {
 
     /// Address out of bounds
     OutOfBounds,
+
+    /// postcard error
+    Pack(postcard::Error),
+
+    /// Hints that destructuring should not be exhaustive.
+    ///
+    /// This enum may grow additional variants, so this makes sure clients
+    /// don't count on exhaustive matching. (Otherwise, adding a new variant
+    /// could break existing code.)
+    #[doc(hidden)]
+    __Nonexhaustive,
 }
 
 impl<SPI: spi::Transfer<u8>, CS: OutputPin> core::convert::From<spi_memory::Error<SPI, CS>> for Error<SPI, CS> {
     fn from(error: spi_memory::Error<SPI, CS>) -> Self {
         Error::SpiMem(error)
+    }
+}
+
+impl<SPI: spi::Transfer<u8>, CS: OutputPin> core::convert::From<postcard::Error> for Error<SPI, CS> {
+    fn from(error: postcard::Error) -> Self {
+        Error::Pack(error)
     }
 }
 
@@ -62,7 +79,9 @@ where
             Error::FlashFull => write!(f, "Error::FlashFull"),
             Error::OutOfBounds => write!(f, "Error::OutOfBounds"),
             Error::CorruptPacket => write!(f, "Error::CorruptPacket"),
-            Error::SpiMem(spi_mem) => write!(f, "Error::spi-memory: {:?}", spi_mem)
+            Error::Pack(pack) => write!(f, "Error::postcard: {:?}", pack),
+            Error::SpiMem(spi_mem) => write!(f, "Error::spi-memory: {:?}", spi_mem),
+            Error::__Nonexhaustive => unreachable!(),
         }
     }
 }
@@ -168,8 +187,7 @@ where
     pub fn read(&mut self, addr: u32, buffer: &mut [u8]) -> Result<(), Error<SPI, CS>>{
 
         if addr > self.size_bytes {
-            // todo throw error
-            return Err(Error::FlashFull);
+            return Err(Error::OutOfBounds);
         }
         self.flash.read(addr, buffer)?;
         Ok(())
@@ -184,11 +202,10 @@ where
         self.read(address, &mut buf)?;
 
         if buf[0] == PACKET_HEADER {
-            let deserialized: SensorData = from_bytes(&buf[1..]).unwrap(); // todo add error
-            Ok(deserialized)
-        } else {
-            Err(Error::CorruptPacket)
+            let deserialized: SensorData = from_bytes(&buf[1..])?;
+            return Ok(deserialized);
         }
+        Err(Error::CorruptPacket)
 
     }
 }

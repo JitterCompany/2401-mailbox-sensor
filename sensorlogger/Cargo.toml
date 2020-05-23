@@ -37,4 +37,9 @@ features = ["unproven"]
 
 [dependencies.stm32g0xx-hal]
 features = ["stm32g07x", "rt"]
-version = "0.0.7"
+path = "../../1111-SerialLogger/stm32g0xx-hal"
+# version = "0.0.7"
+
+[profile.dev]
+opt-level = 1
+debug = true
