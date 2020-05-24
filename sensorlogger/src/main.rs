@@ -145,9 +145,9 @@ fn main() -> ! {
     vl6180x.start_ranging().unwrap();
     let mut sensordata = SensorData::new();
     loop {
+        led2.toggle().unwrap();
 
         if dps.data_ready().unwrap() {
-            led1.toggle().unwrap();
             let pressure = dps.read_pressure_calibrated().unwrap();
             let temp = dps.read_temp_calibrated().unwrap();
             // writeln!(usart, "pressure: {:.1} [kPa]\t temp: {:.1} [˚C]", pressure, temp).unwrap();
@@ -162,7 +162,6 @@ fn main() -> ! {
             // writeln!(usart, "range = {} [mm]\n", range).unwrap();
             vl6180x.clear_int().unwrap();
             vl6180x.start_ranging().unwrap();
-            led2.toggle().unwrap();
             sensordata.distance(range);
         }
 
@@ -190,7 +189,12 @@ fn main() -> ! {
 
         if sensordata.ready() {
             writeln!(usart, "{:?}", sensordata).unwrap();
-            storage.write(sensordata).unwrap();
+            led1.set_high().unwrap();
+            match storage.write(sensordata) {
+                Err(err) => writeln!(usart, "error while writing to flash: {:?}", err).unwrap(),
+                _ => {}
+            };
+            led1.set_low().unwrap();
             sensordata = SensorData::new();
         }
 
