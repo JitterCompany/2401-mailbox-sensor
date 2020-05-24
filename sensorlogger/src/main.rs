@@ -7,8 +7,6 @@ extern crate cortex_m_rt as rt;
 extern crate panic_halt;
 
 use rt::entry;
-
-// use embedded_hal::digital::v2::OutputPin;
 use core::fmt::Write;
 
 use stm32g0xx_hal::{
@@ -32,10 +30,6 @@ mod log_storage;
 use log_storage::StorageEngine;
 
 use embedded_hal::digital::v2::OutputPin;
-
-// use serde::{Serialize, Deserialize};
-use postcard::{from_bytes};
-// use heapless::{Vec, consts::*};
 
 mod sensors;
 use sensors::SensorData;
@@ -94,15 +88,6 @@ fn main() -> ! {
 
     // storage.erase(0).unwrap();
     // storage.erase(1).unwrap();
-    // loop {}
-
-    let mut readbuf = [0u8;27];
-    storage.read(0, &mut readbuf).unwrap();
-
-    writeln!(usart, "read from flash: {:?}\n", readbuf).unwrap();
-
-    let deserialized: SensorData = from_bytes(&readbuf[1..]).unwrap();
-    writeln!(usart, "deserialized sensors: {:?}", deserialized).unwrap();
 
     let mut i = 0u32;
     let n  = flash_size / (SensorData::size() + 1);
@@ -114,7 +99,6 @@ fn main() -> ! {
         i += 1;
     }
     writeln!(usart, "Mem dump done").unwrap();
-
 
 
     let mut adc = dp.ADC.constrain(&mut rcc);
@@ -166,7 +150,7 @@ fn main() -> ! {
             led1.toggle().unwrap();
             let pressure = dps.read_pressure_calibrated().unwrap();
             let temp = dps.read_temp_calibrated().unwrap();
-            writeln!(usart, "pressure: {:.1} [kPa]\t temp: {:.1} [˚C]", pressure, temp).unwrap();
+            // writeln!(usart, "pressure: {:.1} [kPa]\t temp: {:.1} [˚C]", pressure, temp).unwrap();
             dps.trigger_measurement(true, true, false).unwrap();
             sensordata.pressure(pressure);
             sensordata.temp(temp);
@@ -183,7 +167,7 @@ fn main() -> ! {
         }
 
         let accel = lis3dh.acceleration().unwrap();
-        writeln!(usart, "accel = {}, {}, {}", accel.x, accel.y, accel.z).unwrap();
+        // writeln!(usart, "accel = {}, {}, {}", accel.x, accel.y, accel.z).unwrap();
         sensordata.accel_x(accel.x);
         sensordata.accel_y(accel.y);
         sensordata.accel_z(accel.z);
@@ -204,13 +188,9 @@ fn main() -> ! {
         // writeln!(usart, "photo diodes: {},  {}", pd1, pd2).unwrap();
         // writeln!(usart, "vbat: {} mV?", vbat*2*3000/4096).unwrap();
 
-
         if sensordata.ready() {
-            let offset = storage.init().unwrap();
-            writeln!(usart, "found offset {}", offset).unwrap();
-            writeln!(usart, "write to flash: {:?}", sensordata).unwrap();
-            let offset = storage.write(sensordata).unwrap();
-            writeln!(usart, "new offset: {}", offset).unwrap();
+            writeln!(usart, "{:?}", sensordata).unwrap();
+            storage.write(sensordata).unwrap();
             sensordata = SensorData::new();
         }
 

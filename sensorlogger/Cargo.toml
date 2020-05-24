@@ -17,7 +17,6 @@ lis3dh = "0.1.0"
 spi-memory = "0.2.0"
 shared-bus = {version="0.1.4", features=["cortexm"]}
 vl6180x = {git="https://github.com/devboard-io/vl6180x-rs"}
-
 heapless = "0.5.5"
 postcard = "0.5.0"
 
@@ -26,20 +25,14 @@ version = "1"
 default-features = false
 features = ["derive"]
 
-# [dependencies.heapless]
-# version = "0.5.5"
-# features = ["serde"]
-# optional = true
-
 [dependencies.embedded-hal]
 version = "0.2.3"
 features = ["unproven"]
 
 [dependencies.stm32g0xx-hal]
 features = ["stm32g07x", "rt"]
-path = "../../1111-SerialLogger/stm32g0xx-hal"
-# version = "0.0.7"
+git = "https://github.com/stm32-rs/stm32g0xx-hal.git#master"
 
 [profile.dev]
-opt-level = 1
+opt-level = 's'
 debug = true
