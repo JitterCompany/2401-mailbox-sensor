@@ -34,5 +34,11 @@ features = ["stm32g07x", "rt"]
 git = "https://github.com/stm32-rs/stm32g0xx-hal.git#master"
 
 [profile.dev]
-opt-level = 's'
+opt-level = 1
 debug = true
+
+[profile.release]
+opt-level = 's'
+codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
