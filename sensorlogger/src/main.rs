@@ -57,7 +57,7 @@ fn main() -> ! {
     let rx = gpioa.pa10;
     let mut usart = dp
         .USART1
-        .usart(tx, rx, Config::default().baudrate(115200.bps()), &mut rcc)
+        .usart(tx, rx, Config::default().baudrate(500000.bps()), &mut rcc)
         .unwrap();
 
     writeln!(usart, "Hallo, brievenbus!\n").unwrap();
@@ -93,7 +93,25 @@ fn main() -> ! {
     let n  = flash_size / (SensorData::size() + 1);
     while i < n {
         match storage.read_sensors(i) {
-            Ok(sensor) => writeln!(usart, "{}, {:?}", i, sensor).unwrap(),
+            Ok(s) => {
+                #[allow(unsafe_code)]
+                unsafe {
+                    writeln!(usart, "{:.1},{:.1},{},{},{},{},{},{},{},{},{}",
+                        s.pressure,
+                        s.temp,
+                        s.accel_x,
+                        s.accel_y,
+                        s.accel_z,
+                        s.photo_t1,
+                        s.photo_t2,
+                        s.photo_d1,
+                        s.photo_d2,
+                        s.vbat,
+                        s.distance
+                    ).unwrap();
+                }
+                // writeln!(usart, "{:?}", s).unwrap()
+            },
             Err(_err) => break,
         };
         i += 1;
@@ -196,6 +214,8 @@ fn main() -> ! {
             };
             led1.set_low().unwrap();
             sensordata = SensorData::new();
+        } else {
+            writeln!(usart, "sensors not ready yet..").unwrap();
         }
 
         delay.delay_ms(2000_u16);
