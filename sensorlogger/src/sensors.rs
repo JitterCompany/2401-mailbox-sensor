@@ -4,17 +4,17 @@ use serde::{Serialize, Deserialize};
 #[repr(packed(2))]
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 pub struct SensorData {
-    pressure: f32,
-    temp: f32,
-    accel_x: i16,
-    accel_y: i16,
-    accel_z: i16,
-    photo_t1: u16,
-    photo_t2: u16,
-    photo_d1: u16,
-    photo_d2: u16,
-    vbat: u16,
-    distance: u16,
+    pub pressure: f32,
+    pub temp: f32,
+    pub accel_x: i16,
+    pub accel_y: i16,
+    pub accel_z: i16,
+    pub photo_t1: u16,
+    pub photo_t2: u16,
+    pub photo_d1: u16,
+    pub photo_d2: u16,
+    pub vbat: u16,
+    pub distance: u16,
 }
 
 

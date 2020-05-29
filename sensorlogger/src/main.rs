@@ -41,7 +41,7 @@ fn main() -> ! {
     let mut rcc = dp.RCC.constrain();
     let gpiob = dp.GPIOB.split(&mut rcc);
     let mut led1 = gpiob.pb5.into_push_pull_output();
-    led1.set_high().unwrap();
+    // led1.set_high().unwrap();
 
     let mut led2 = gpiob.pb9.into_push_pull_output();
     led2.set_low().unwrap();
@@ -89,34 +89,44 @@ fn main() -> ! {
     // storage.erase(0).unwrap();
     // storage.erase(1).unwrap();
 
-    let mut i = 0u32;
-    let n  = flash_size / (SensorData::size() + 1);
-    while i < n {
-        match storage.read_sensors(i) {
-            Ok(s) => {
-                #[allow(unsafe_code)]
-                unsafe {
-                    writeln!(usart, "{:.1},{:.1},{},{},{},{},{},{},{},{},{}",
-                        s.pressure,
-                        s.temp,
-                        s.accel_x,
-                        s.accel_y,
-                        s.accel_z,
-                        s.photo_t1,
-                        s.photo_t2,
-                        s.photo_d1,
-                        s.photo_d2,
-                        s.vbat,
-                        s.distance
-                    ).unwrap();
-                }
-                // writeln!(usart, "{:?}", s).unwrap()
-            },
-            Err(_err) => break,
-        };
-        i += 1;
+    #[cfg(feature = "use_flash")]
+    {
+        let mut i = 0u32;
+        let n  = flash_size / (SensorData::size() + 1);
+        while i < n {
+            match storage.read_sensors(i) {
+                Ok(s) => {
+                    #[allow(unsafe_code)]
+                    unsafe {
+                        writeln!(usart, "{:.1},{:.1},{},{},{},{},{},{},{},{},{}",
+                            s.pressure,
+                            s.temp,
+                            s.accel_x,
+                            s.accel_y,
+                            s.accel_z,
+                            s.photo_t1,
+                            s.photo_t2,
+                            s.photo_d1,
+                            s.photo_d2,
+                            s.vbat,
+                            s.distance
+                        ).unwrap();
+
+                        writeln!(usart, "plot {},{},{},{}",
+                            s.photo_t1,
+                            s.photo_t2,
+                            s.photo_d1,
+                            s.photo_d2,
+                        ).unwrap();
+                    }
+                    // writeln!(usart, "{:?}", s).unwrap()
+                },
+                Err(_err) => break,
+            };
+            i += 1;
+        }
+        writeln!(usart, "Mem dump done").unwrap();
     }
-    writeln!(usart, "Mem dump done").unwrap();
 
 
     let mut adc = dp.ADC.constrain(&mut rcc);
@@ -147,7 +157,7 @@ fn main() -> ! {
 
     let manager = shared_bus::CortexMBusManager::new(i2c);
 
-    let mut dps = DPS422::new(manager.acquire(), 0x76, &dps422::Config::new()).expect("dps422 failed to intialize");
+    let mut dps = DPS422::new(manager.acquire(), 0x76, &dps422::Config::new().pres_rate(dps422::PressureRate::_128_SPS)).expect("dps422 failed to intialize");
 
     writeln!(usart, "DPS422 init done").unwrap();
 
@@ -155,6 +165,7 @@ fn main() -> ! {
     writeln!(usart, "VL6180X init done..\n").unwrap();
 
     let mut lis3dh = Lis3dh::new(manager.acquire(), 0x19).unwrap();
+    lis3dh.set_range(lis3dh::Range::G2).unwrap();
     writeln!(usart, "Lis3dh init done..\n").unwrap();
 
     lis3dh.set_range(lis3dh::Range::G8).unwrap();
@@ -163,7 +174,7 @@ fn main() -> ! {
     vl6180x.start_ranging().unwrap();
     let mut sensordata = SensorData::new();
     loop {
-        led2.toggle().unwrap();
+        // led2.toggle().unwrap();
 
         if dps.data_ready().unwrap() {
             let pressure = dps.read_pressure_calibrated().unwrap();
@@ -206,19 +217,34 @@ fn main() -> ! {
         // writeln!(usart, "vbat: {} mV?", vbat*2*3000/4096).unwrap();
 
         if sensordata.ready() {
-            writeln!(usart, "{:?}", sensordata).unwrap();
-            led1.set_high().unwrap();
+            // writeln!(usart, "{:?}", sensordata).unwrap();
+            #[allow(unsafe_code)]
+            unsafe {
+                let s = sensordata;
+                writeln!(usart, "plot {},{}",
+                    // s.distance,
+                    // s.temp
+                    s.photo_t1,
+                    s.photo_t2,
+                    // s.photo_d1,
+                    // s.photo_d2,
+                ).unwrap();
+            }
+            // led1.set_high().unwrap();
+
+            #[cfg(feature = "use_flash")]
             match storage.write(sensordata) {
                 Err(err) => writeln!(usart, "error while writing to flash: {:?}", err).unwrap(),
                 _ => {}
             };
-            led1.set_low().unwrap();
+
+            // led1.set_low().unwrap();
             sensordata = SensorData::new();
         } else {
             writeln!(usart, "sensors not ready yet..").unwrap();
         }
 
-        delay.delay_ms(2000_u16);
+        delay.delay_ms(400_u16);
 
     }
 }
