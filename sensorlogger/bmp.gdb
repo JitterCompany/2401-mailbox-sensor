@@ -9,8 +9,8 @@ monitor traceswo
 set mem inaccessible-by-default off
 
 # common
-break Reset
-# break main
+# break Reset
+break main.rs:87
 
 load
 

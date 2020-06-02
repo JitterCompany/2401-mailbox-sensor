@@ -1,4 +1,3 @@
-#![deny(unsafe_code)]
 #![no_main]
 #![no_std]
 
@@ -16,8 +15,9 @@ use stm32g0xx_hal::{
     timer,
     i2c,
     spi,
-    analog::adc::{Precision, SampleTime},
+    analog::adc::{Precision, SampleTime, VRef},
 };
+
 
 use stm32g0xx_hal::rcc::{Config as RCCConfig, Prescaler};
 use cortex_m::{interrupt::Mutex};
@@ -41,6 +41,53 @@ use counter::CSCounter;
 
 static TIME_MS: CSCounter<u32> = CSCounter(UnsafeCell::new(0));
 static TIMER1: Mutex<RefCell<Option<timer::Timer<stm32::TIM1>>>> = Mutex::new(RefCell::new(None));
+
+
+// tscal1 address 0x1FFF 75A8 - 0x1FFF 75A9 datasheet 3.13.1
+// vref int address 0x1FFF 75AA - 0x1FFF 75AB datasheet 3.13.2
+
+// use core::marker::PhantomData;
+
+// pub struct VREFINT {
+//     _marker: PhantomData<*const ()>,
+// }
+
+// impl VREFINT {
+//     #[doc = r"Returns a pointer to the calibration value"]
+//     #[inline(always)]
+//     pub const fn ptr() -> *const u16 {
+//         0x1FFF_75AA as *const _
+//     }
+// }
+// impl Deref for VREFINT {
+//     type Target = u16;
+//     #[inline(always)]
+//     fn deref(&self) -> &u16 {
+//         unsafe { &*VREFINT::ptr() }
+//     }
+// }
+
+const fn vrefint_ptr() -> *const u16 {
+    0x1FFF_75AA as *const _
+}
+
+fn calc_vbat(vref_val: u32, vbat_val: u32) -> (u32,u32) {
+
+    // safe because read only memory area
+    let vref_cal: u32 = unsafe {
+        *vrefint_ptr() as u32
+    };
+
+    // VDDA = 3 V x VREFINT_CAL / VREFINT_DATA
+    let vdda_mv = 3000u32 * vref_cal / vref_val;
+
+    //                          Vdda
+    // VCHANNELx = ---------------------------------- × ADC_DATAx
+    //                      FULL_SCALE
+    let vbat_mv = (vdda_mv * vbat_val / 4096u32) * 2; // x2 because of voltage divide
+
+    (vdda_mv, vbat_mv)
+}
 
 #[entry]
 fn main() -> ! {
@@ -70,7 +117,7 @@ fn main() -> ! {
         .unwrap()
     };
 
-    writeln!(usart, "Start brievenbusrangingor!\n").unwrap();
+    writeln!(usart, "Start brievenbusranging!\n").unwrap();
 
     let spi = {
         let sck = gpioa.pa5;
@@ -149,6 +196,19 @@ fn main() -> ! {
     let mut phototransistor1_pin = gpioa.pa1.into_analog();
 
     let mut vbat_pin = gpiob.pb2.into_analog();
+
+    let mut vref = VRef::new();
+    vref.enable(&mut adc);
+    let vref_val: u16 = adc.read(&mut vref).expect("adc read failed");
+    let vbat_val: u16 = adc.read(&mut vbat_pin).expect("adc read failed");
+    let (vdda_mv, vbat_mv) = calc_vbat(vref_val as u32, vbat_val as u32);
+
+    writeln!(usart, "vref: {}, vdd {} mV, vbat: {} mV", vref_val, vdda_mv, vbat_mv).unwrap();
+
+
+
+
+
 
     // I2C pins
     let scl = gpiob.pb6.into_open_drain_output();
@@ -271,8 +331,11 @@ fn main() -> ! {
         }
 
 
-        let vbat: u16 = adc.read(&mut vbat_pin).expect("adc read failed");
-        sensordata.vbat(vbat);
+        let vref_val: u16 = adc.read(&mut vref).expect("adc read failed");
+        let vbat_val: u16 = adc.read(&mut vbat_pin).expect("adc read failed");
+        let (vdda_mv, _vbat_mv) = calc_vbat(vref_val as u32, vbat_val as u32);
+
+        sensordata.vbat(vdda_mv as u16);
 
 
         if ranging > 0 {
@@ -302,8 +365,8 @@ fn main() -> ! {
                 // every n seconds
                 if (t / 1000) % 2 == 0 {
                     sensordata.time_ms(t);
-                    #[cfg(feature = "use_flash")]
                     writeln!(usart, "{:?}", sensordata).unwrap();
+                    #[cfg(feature = "use_flash")]
                     match storage.write(sensordata) {
                         Err(err) => writeln!(usart, "error while writing to flash: {:?}", err).unwrap(),
                         _ => {}
