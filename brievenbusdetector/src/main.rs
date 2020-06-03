@@ -66,8 +66,14 @@ static TIMER1: Mutex<RefCell<Option<timer::Timer<stm32::TIM1>>>> = Mutex::new(Re
 //         unsafe { &*VREFINT::ptr() }
 //     }
 // }
+use core::ptr;
 
+// const VREFINT_CAL: *mut u16 = 0x1FFF_75AA as *mut u16;
+
+/// Returns a pointer to VREFINT_CAL, the VREFINT calibration value
+#[inline(always)]
 const fn vrefint_ptr() -> *const u16 {
+    // DS12766 3.13.2
     0x1FFF_75AA as *const _
 }
 
@@ -75,16 +81,18 @@ fn calc_vbat(vref_val: u32, vbat_val: u32) -> (u32,u32) {
 
     // safe because read only memory area
     let vref_cal: u32 = unsafe {
-        *vrefint_ptr() as u32
+        ptr::read_volatile(vrefint_ptr()) as u32
     };
 
-    // VDDA = 3 V x VREFINT_CAL / VREFINT_DATA
+    // RM0454 14.9 Calculating the actual VDDA voltage using the internal reference voltage
+    // V_DDA = 3 V x VREFINT_CAL / VREFINT_DATA
     let vdda_mv = 3000u32 * vref_cal / vref_val;
 
-    //                          Vdda
-    // VCHANNELx = ---------------------------------- × ADC_DATAx
-    //                      FULL_SCALE
-    let vbat_mv = (vdda_mv * vbat_val / 4096u32) * 2; // x2 because of voltage divide
+    // RM0454 14.9 Converting a supply-relative ADC measurement to an absolute voltage value
+    //                   Vdda
+    // VCHANNELx = --------------- × ADC_DATAx
+    //                FULL_SCALE
+    let vbat_mv = (vdda_mv * vbat_val / 4095u32) * 2; // x2 because of voltage divide
 
     (vdda_mv, vbat_mv)
 }
