@@ -3,7 +3,6 @@
 
 extern crate cortex_m;
 extern crate cortex_m_rt as rt;
-extern crate panic_halt;
 
 use rt::entry;
 use core::fmt::Write;
@@ -42,6 +41,38 @@ use counter::CSCounter;
 static TIME_MS: CSCounter<u32> = CSCounter(UnsafeCell::new(0));
 static TIMER1: Mutex<RefCell<Option<timer::Timer<stm32::TIM1>>>> = Mutex::new(RefCell::new(None));
 
+use core::panic::PanicInfo;
+use core::sync::atomic::{self, Ordering};
+
+#[inline(never)]
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    const GPIOB_BSRR: *mut u32 = 0x5000_0418 as *mut u32;
+    const ON: u32 = 1_000;
+    const OFF: u32 = 20_000;
+    loop {
+
+        unsafe {
+
+            // turn on red led
+            ptr::write_volatile(GPIOB_BSRR, 1 << 5);
+
+            for _i in 1..ON {
+                atomic::compiler_fence(Ordering::SeqCst);
+            }
+
+            // turn off red led
+            ptr::write_volatile(GPIOB_BSRR, 1 << 21);
+
+            for _i in 1..OFF {
+                atomic::compiler_fence(Ordering::SeqCst);
+            }
+
+        }
+        // led1.toggle().unwrap();
+        // delay.delay_ms(2000u16);
+    }
+}
 
 // tscal1 address 0x1FFF 75A8 - 0x1FFF 75A9 datasheet 3.13.1
 // vref int address 0x1FFF 75AA - 0x1FFF 75AB datasheet 3.13.2
@@ -97,6 +128,17 @@ fn calc_vbat(vref_val: u32, vbat_val: u32) -> (u32,u32) {
     (vdda_mv, vbat_mv)
 }
 
+// #[derive(Debug)]
+// enum CrashError {
+//     Intentional = 1
+// }
+// /// intentionally crash
+// /// let _crash = crash().unwrap();
+// fn crash() -> Result<(), CrashError> {
+//     Err(CrashError::Intentional)
+// }
+
+
 #[entry]
 fn main() -> ! {
 
@@ -111,11 +153,11 @@ fn main() -> ! {
     let gpioa = dp.GPIOA.split(&mut rcc);
     let gpiob = dp.GPIOB.split(&mut rcc);
 
-    let mut led1 = gpiob.pb5.into_push_pull_output();
-    let mut led2 = gpiob.pb9.into_push_pull_output();
+    let mut led1 = gpiob.pb5.into_push_pull_output(); // red
+    let mut led2 = gpiob.pb9.into_push_pull_output(); // green
 
     led1.set_low().unwrap();
-    led2.set_low().unwrap();
+    led2.set_high().unwrap();
 
     let mut usart = {
         let tx = gpioa.pa9;
@@ -147,6 +189,7 @@ fn main() -> ! {
     let offset = storage.init().unwrap();
 
     writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset  / (SensorData::size() + 1)).unwrap();
+
 
     // Configure the timer.
     let mut timer = dp.TIM1.timer(&mut rcc);
@@ -248,24 +291,38 @@ fn main() -> ! {
     let mut ranging: usize = 0;
     const NEW_RANGING: usize = 50;
 
+
+    writeln!(usart, "Enable timer..\n").unwrap();
+
     #[allow(unsafe_code)]
     unsafe {
         stm32::NVIC::unmask(stm32::Interrupt::TIM1_BRK_UP_TRG_COMP);
     }
 
+    writeln!(usart, "start loop\n").unwrap();
 
     #[cfg(feature = "full_erase")]
     {
         writeln!(usart, "Erase storage now..").unwrap();
         let start_time = TIME_MS.get();
         match storage.erase_all() {
-            Err(err) => writeln!(usart, "Error erasing storage\n {:?}", err).unwrap(),
+            Err(err) => {
+                led1.set_high().unwrap();
+                writeln!(usart, "Error erasing storage\n {:?}", err).unwrap();
+            }
             Ok(_) => {
                 let total_erase_time = (TIME_MS.get() - start_time) / 1000;
                 writeln!(usart, "Erased storage in {} [sec] ", total_erase_time).unwrap();
             }
         }
     }
+
+    #[cfg(feature = "use_flash")]
+    {
+        writeln!(usart, "Wait 10 seconds before initializing sensors").unwrap();
+        delay.delay_ms(10*1000u16);
+    }
+    led2.set_low().unwrap();
 
     writeln!(usart, "Initializing averaging buffers..").unwrap();
 
@@ -294,7 +351,7 @@ fn main() -> ! {
         if (status & 0b100) == 0b100 {
             let range = vl6180x.read_range().unwrap();
 
-            writeln!(usart, "range = {} [mm]\n", range).unwrap();
+            // writeln!(usart, "range = {} [mm]\n", range).unwrap();
             vl6180x.clear_int().unwrap();
             sensordata.distance(range);
             if ranging > 0 {

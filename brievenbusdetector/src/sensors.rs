@@ -31,7 +31,7 @@ impl SensorData {
 
     pub const fn size() -> u32 {
         //size_of::<SensorData>() as u32 // not const according to rustc...
-        4+6*2
+        4 + 4*2 + 2*1
     }
 
     pub fn properties_set(&self) -> u32 {

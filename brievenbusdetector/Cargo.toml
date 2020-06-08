@@ -10,7 +10,6 @@ edition = "2018"
 [dependencies]
 cortex-m = "0.6.2"
 cortex-m-rt = "0.6.12"
-panic-halt = "0.2.0"
 nb = "0.1.2"
 spi-memory = "0.2.0"
 vl6180x = {git="https://github.com/devboard-io/vl6180x-rs"}

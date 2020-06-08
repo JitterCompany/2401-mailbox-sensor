@@ -10,7 +10,7 @@ set mem inaccessible-by-default off
 
 # common
 # break Reset
-break main.rs:87
+# break main.rs:87
 
 load
 
