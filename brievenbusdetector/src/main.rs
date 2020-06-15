@@ -145,8 +145,9 @@ fn main() -> ! {
     let cp = cortex_m::Peripherals::take().unwrap();
     let dp = stm32::Peripherals::take().expect("cannot take peripherals");
 
-    let mut rcc = dp.RCC.freeze(RCCConfig::hsi(Prescaler::Div16));
-    rcc.enable_low_power_mode();
+    // let mut rcc = dp.RCC.freeze(RCCConfig::hsi(Prescaler::Div16));
+    // rcc.enable_low_power_mode();
+    let mut rcc = dp.RCC.constrain();
 
     let mut delay = cp.SYST.delay(&mut rcc);
 
@@ -186,9 +187,6 @@ fn main() -> ! {
     let id = flash.read_jedec_id().unwrap();
     let flash_size = 0x800000;
     let mut storage = StorageEngine::new(flash, flash_size, 0x1000, 0x100);
-    let offset = storage.init().unwrap();
-
-    writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset  / (SensorData::size() + 1)).unwrap();
 
 
     // Configure the timer.
@@ -208,12 +206,19 @@ fn main() -> ! {
     {
         let mut i = 0u32;
         let n  = flash_size / (SensorData::size() + 1);
+
+        led2.set_high().unwrap();
+        writeln!(usart, "Wait 3 seconds before umping flash").unwrap();
+        delay.delay_ms(3*1000u16);
+        led2.set_low().unwrap();
+
+        writeln!(usart, "Start flash dump (max {} lines).", n).unwrap();
         while i < n {
             match storage.read_sensors(i) {
                 Ok(s) => {
                     #[allow(unsafe_code)]
                     unsafe {
-                        writeln!(usart, "{},{},{},{},{},{},{}",
+                        writeln!(usart, "csv{},{},{},{},{},{},{}",
                             s.time_ms,
                             s.photo_t1,
                             s.photo_t2,
@@ -222,17 +227,14 @@ fn main() -> ! {
                             s.trigger_light,
                             s.trigger_distance
                         ).unwrap();
-
-                        // writeln!(usart, "plot {},{}",
-                        //     s.photo_t1,
-                        //     s.photo_t2,
-                        // ).unwrap();
                     }
-                    // writeln!(usart, "{:?}", s).unwrap()
                 },
                 Err(_err) => break,
             };
             i += 1;
+            if i % 3600 == 0 {
+                writeln!(usart, "logged [{}] lines..", i).unwrap();
+            }
         }
         writeln!(usart, "Mem dump done").unwrap();
     }
@@ -291,6 +293,12 @@ fn main() -> ! {
     let mut ranging: usize = 0;
     const NEW_RANGING: usize = 50;
 
+
+    #[cfg(feature = "use_flash")]
+    {
+        let offset = storage.init().unwrap();
+        writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset  / (SensorData::size() + 1)).unwrap();
+    }
 
     writeln!(usart, "Enable timer..\n").unwrap();
 
