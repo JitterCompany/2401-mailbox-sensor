@@ -48,3 +48,5 @@ lto = true # better optimizations
 [features]
 use_flash = []
 full_erase = []
+low_power = []
+crash = []

@@ -28,3 +28,10 @@ Cargo run
 
 Cargo build
 ```
+
+For release
+
+```
+cargo build --release --features use_flash,low_power
+bobbin load --bin brievenbusdetector --release --features use_flash,low_power
+```

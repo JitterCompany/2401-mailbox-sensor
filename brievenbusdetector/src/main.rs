@@ -13,18 +13,21 @@ use stm32g0xx_hal::{
     serial::Config,
     timer,
     i2c,
-    spi,
     analog::adc::{Precision, SampleTime, VRef},
 };
 
+use stm32g0xx_hal::spi;
 
+
+#[cfg(feature = "low_power")]
 use stm32g0xx_hal::rcc::{Config as RCCConfig, Prescaler};
+
 use cortex_m::{interrupt::Mutex};
 use core::{cell::RefCell, ops::DerefMut, cell::UnsafeCell};
 
-use spi_memory::series25::Flash;
-
 use vl6180x::{VL6180X};
+
+use spi_memory::series25::Flash;
 
 mod log_storage;
 use log_storage::StorageEngine;
@@ -36,6 +39,9 @@ use sensors::SensorData;
 
 mod counter;
 use counter::CSCounter;
+
+mod detector;
+use detector::{Detector, TriggerEdge};
 
 
 static TIME_MS: CSCounter<u32> = CSCounter(UnsafeCell::new(0));
@@ -128,15 +134,30 @@ fn calc_vbat(vref_val: u32, vbat_val: u32) -> (u32,u32) {
     (vdda_mv, vbat_mv)
 }
 
-// #[derive(Debug)]
-// enum CrashError {
-//     Intentional = 1
-// }
-// /// intentionally crash
-// /// let _crash = crash().unwrap();
-// fn crash() -> Result<(), CrashError> {
-//     Err(CrashError::Intentional)
-// }
+#[cfg(feature = "crash")]
+#[derive(Debug)]
+enum CrashError {
+    Intentional = 1
+}
+#[cfg(feature = "crash")]
+/// intentionally crash
+/// let _crash = crash().unwrap();
+fn crash() -> Result<(), CrashError> {
+    Err(CrashError::Intentional)
+}
+
+#[derive(Eq, PartialEq)]
+enum AppState {
+    Idle = 0,
+    Triggered = 1,
+    Ranging = 2
+}
+
+const TRIGGER_TIME: usize = 15;
+const RANGING_TIME: usize = 50;
+
+const FLASH_SIZE: u32 = 0x800000;
+
 
 
 #[entry]
@@ -145,9 +166,13 @@ fn main() -> ! {
     let cp = cortex_m::Peripherals::take().unwrap();
     let dp = stm32::Peripherals::take().expect("cannot take peripherals");
 
-    // let mut rcc = dp.RCC.freeze(RCCConfig::hsi(Prescaler::Div16));
-    // rcc.enable_low_power_mode();
+    #[cfg(feature = "low_power")]
+    let mut rcc = dp.RCC.freeze(RCCConfig::hsi(Prescaler::Div16));
+    #[cfg(feature = "low_power")]
+    rcc.enable_low_power_mode();
+    #[cfg(not(feature = "low_power"))]
     let mut rcc = dp.RCC.constrain();
+
 
     let mut delay = cp.SYST.delay(&mut rcc);
 
@@ -163,40 +188,47 @@ fn main() -> ! {
     let mut usart = {
         let tx = gpioa.pa9;
         let rx = gpioa.pa10;
+
+        let _baudrate = 9600;
+        #[cfg(not(feature = "low_power"))]
+        let _baudrate = 500000;
+
         dp.USART1
-        .usart(tx, rx, Config::default().baudrate(9600.bps()), &mut rcc)
+        .usart(tx, rx, Config::default().baudrate(_baudrate.bps()), &mut rcc)
         .unwrap()
     };
 
     writeln!(usart, "Start brievenbusranging!\n").unwrap();
 
-    let spi = {
-        let sck = gpioa.pa5;
-        let miso = gpioa.pa6;
-        let mosi = gpioa.pa7;
-        dp.SPI1.spi(
-            (sck, miso, mosi),
-            spi::MODE_0,
-            1000.khz(),
-            &mut rcc)
+      // Configure the timer.
+      let mut timer = dp.TIM1.timer(&mut rcc);
+      timer.start(1.khz());
+      timer.listen();
+
+      cortex_m::interrupt::free(|cs| {
+          *TIMER1.borrow(cs).borrow_mut() = Some(timer);
+      });
+
+
+    let mut storage = {
+        let spi = {
+            let sck = gpioa.pa5;
+            let miso = gpioa.pa6;
+            let mosi = gpioa.pa7;
+            dp.SPI1.spi(
+                (sck, miso, mosi),
+                spi::MODE_0,
+                1000.khz(),
+                &mut rcc)
+        };
+
+        let mut flash_cs = gpioa.pa8.into_push_pull_output();
+        flash_cs.set_high().unwrap();
+        let flash = Flash::init(spi, flash_cs).unwrap();
+        StorageEngine::new(flash, FLASH_SIZE, 0x1000, 0x100)
     };
 
-    let mut flash_cs = gpioa.pa8.into_push_pull_output();
-    flash_cs.set_high().unwrap();
-    let mut flash = Flash::init(spi, flash_cs).unwrap();
-    let id = flash.read_jedec_id().unwrap();
-    let flash_size = 0x800000;
-    let mut storage = StorageEngine::new(flash, flash_size, 0x1000, 0x100);
 
-
-    // Configure the timer.
-    let mut timer = dp.TIM1.timer(&mut rcc);
-    timer.start(1.khz());
-    timer.listen();
-
-    cortex_m::interrupt::free(|cs| {
-        *TIMER1.borrow(cs).borrow_mut() = Some(timer);
-    });
 
     // storage.erase(0).unwrap();
     // storage.erase(1).unwrap();
@@ -205,7 +237,7 @@ fn main() -> ! {
     #[cfg(feature = "use_flash")]
     {
         let mut i = 0u32;
-        let n  = flash_size / (SensorData::size() + 1);
+        let n  = FLASH_SIZE / (SensorData::size() + 1);
 
         led2.set_high().unwrap();
         writeln!(usart, "Wait 3 seconds before umping flash").unwrap();
@@ -284,20 +316,13 @@ fn main() -> ! {
     vl6180x.start_ranging().unwrap();
     let mut sensordata = SensorData::new();
 
-    const AVERAGING_LEN: usize = 50;
-    let mut light_array: [i32; AVERAGING_LEN] = [0; AVERAGING_LEN];
-    let mut distance_array: [u32; AVERAGING_LEN] = [0; AVERAGING_LEN];
-    let mut i: usize = 0;
-    let mut j: usize = 0;
-
-    let mut ranging: usize = 0;
-    const NEW_RANGING: usize = 50;
-
+    let mut light_detector = Detector::new(0.25, TriggerEdge::Both);
+    let mut distance_detector = Detector::new(0.10, TriggerEdge::Less);
 
     #[cfg(feature = "use_flash")]
     {
         let offset = storage.init().unwrap();
-        writeln!(usart, "Init flash with id: {:?}, offset: {}\n", id, offset  / (SensorData::size() + 1)).unwrap();
+        writeln!(usart, "Init flash with offset: {}\n", offset  / (SensorData::size() + 1)).unwrap();
     }
 
     writeln!(usart, "Enable timer..\n").unwrap();
@@ -334,24 +359,28 @@ fn main() -> ! {
 
     writeln!(usart, "Initializing averaging buffers..").unwrap();
 
-    while i < AVERAGING_LEN {
+    while !light_detector.initialized {
         let light: u16 = adc.read(&mut phototransistor2_pin).expect("adc read failed");
         vl6180x.start_ranging().unwrap();
         delay.delay_ms(50_u16);
 
         let range = vl6180x.read_range().unwrap();
-        light_array[i] = light as i32;
-        distance_array[i] = range as u32;
-        i += 1;
+        light_detector.add(light as i32);
+        distance_detector.add(range as i32);
+
         delay.delay_ms(150_u16);
     }
 
-    let distance_av: u32 = distance_array.iter().fold(0, |s, &x| s+x) / (AVERAGING_LEN as u32);
-    let light_av: i32 = light_array.iter().fold(0, |s, &x| s+x) / (AVERAGING_LEN as i32);
+    let distance_av: i32 = distance_detector.mean();
+    let light_av: i32 = light_detector.mean();
 
     writeln!(usart, "Done, distance: {}, light: {} \n start detector loop", distance_av, light_av).unwrap();
 
-    i = 0;
+    let mut state: AppState = AppState::Idle;
+    let mut triggered: usize = 0;
+    let mut state_timer: usize = 0;
+    let mut light_sample: i32 = 0;
+    let mut distance_sample: i32 = 0;
 
     loop {
 
@@ -362,45 +391,26 @@ fn main() -> ! {
             // writeln!(usart, "range = {} [mm]\n", range).unwrap();
             vl6180x.clear_int().unwrap();
             sensordata.distance(range);
-            if ranging > 0 {
-                let av: u32 = distance_array.iter().fold(0, |s, &x| s+x) / (AVERAGING_LEN as u32);
-                if range < (av as f32 * 0.9) as u8 {
-                    writeln!(usart, "Detect mail!").unwrap();
-                    sensordata.trigger_distance(true);
-                }
-                writeln!(usart, "plot {}, {}", 0, (range as u16)*10).unwrap();
-            } else {
-                distance_array[j] = range as u32;
-                j += 1;
-                j %= AVERAGING_LEN;
-                writeln!(usart, "plot {}, {}", 0, (range as u16)*10).unwrap();
+
+            distance_sample = range as i32;
+
+            writeln!(usart, "plot {}, {}", 0, (range as u16)*10).unwrap();
+
+            if state == AppState::Idle {
+                // delay until phototransistors can be used again
                 delay.delay_ms(100_u16);
             }
         }
 
-        if ranging == 0 {
+        if state != AppState::Ranging {
             let pt1: u16 = adc.read(&mut phototransistor1_pin).expect("adc read failed");
             let pt2: u16 = adc.read(&mut phototransistor2_pin).expect("adc read failed");
 
             sensordata.photo_t1(pt1);
             sensordata.photo_t2(pt2);
 
-            let new_value = pt2 as i32;
+            light_sample = pt2 as i32;
             writeln!(usart, "plot {}", pt2).unwrap();
-            light_array[i] = new_value;
-            i += 1;
-            i %= AVERAGING_LEN;
-
-            let av: i32 = light_array.iter().fold(0, |s, &x| s+x) / (AVERAGING_LEN as i32);
-            let diff: f32 = (av - new_value).abs() as f32;
-            // writeln!(usart, "av = {}, new_value = {}", av, new_value).unwrap();
-
-            if diff > (0.25 * (av as f32)) {
-                ranging = NEW_RANGING;
-                sensordata.trigger_light(true);
-                writeln!(usart, "light changed: start ranging").unwrap();
-            }
-
         }
 
 
@@ -411,32 +421,76 @@ fn main() -> ! {
         sensordata.vbat(vdda_mv as u16);
 
 
-        if ranging > 0 {
-            vl6180x.start_ranging().unwrap();
-            ranging -= 1;
-            delay.delay_ms(20_u16);
+        match state {
+            AppState::Idle => {
 
-            if sensordata.properties_set() > 1 {
-                let t: u32 = TIME_MS.get();
-                sensordata.time_ms(t);
-                writeln!(usart, "{:?}", sensordata).unwrap();
-                #[cfg(feature = "use_flash")]
-                match storage.write(sensordata) {
-                    Err(err) => writeln!(usart, "error while writing to flash: {:?}", err).unwrap(),
-                    _ => {}
-                };
+                if state_timer == 0 {
+                    // first time in state
+                    writeln!(usart, "info [Idle] state").unwrap();
+                    state_timer += 1;
+                }
+                // if state_timer == (usize::max_value() - 1) {
+                //     // prevent overflow
+                //     state_timer = 1;
+                // }
+                // state_timer += 1;
 
-                sensordata = SensorData::new();
-            }
+                light_detector.add(light_sample);
 
-        } else {
-            delay.delay_ms(500_u16);
+                // if diff > (0.25 * (av as f32)) {
+                if light_detector.is_triggered(light_sample) {
+                    state = AppState::Triggered;
+                    state_timer = 0;
+                    sensordata.trigger_light(true);
+                    writeln!(usart, "light changed: start ranging").unwrap();
+                }
 
-            if sensordata.properties_set() > 1 {
-                let t: u32 = TIME_MS.get();
+                if distance_sample > 0 {
+                    distance_detector.add(distance_sample as i32);
+                    distance_sample = 0;
+                }
 
-                // every n seconds
-                if (t / 1000) % 2 == 0 {
+                delay.delay_ms(500_u16);
+
+                if sensordata.properties_set() > 1 {
+                    let t: u32 = TIME_MS.get();
+
+                    // every n seconds
+                    if (t / 1000) % 2 == 0 {
+                        sensordata.time_ms(t);
+                        writeln!(usart, "{:?}", sensordata).unwrap();
+
+                        #[cfg(feature = "use_flash")]
+                        match storage.write(sensordata) {
+                            Err(err) => writeln!(usart, "error while writing to flash: {:?}", err).unwrap(),
+                            _ => {}
+                        };
+                    }
+
+                    // every minute
+                    if (t / 1000) % 60 == 0 {
+                        vl6180x.start_ranging().unwrap();
+                    }
+
+
+                    sensordata = SensorData::new();
+                }
+            },
+            AppState::Triggered => {
+
+                if state_timer == 0 {
+                    // first time in state
+                    triggered = 0;
+                    writeln!(usart, "warning [Triggered] state").unwrap();
+                }
+
+                if light_detector.is_triggered(light_sample) {
+
+                    triggered += 1;
+                }
+
+                if sensordata.properties_set() > 1 {
+                    let t: u32 = TIME_MS.get();
                     sensordata.time_ms(t);
                     writeln!(usart, "{:?}", sensordata).unwrap();
                     #[cfg(feature = "use_flash")]
@@ -445,14 +499,56 @@ fn main() -> ! {
                         _ => {}
                     };
                 }
+                delay.delay_ms(1_u16);
 
-                // every minute
-                if (t / 1000) % 60 == 0 {
-                    vl6180x.start_ranging().unwrap();
+                state_timer += 1;
+                if state_timer >= TRIGGER_TIME {
+                    state = if triggered > 5 {
+                        AppState::Ranging
+                    } else {
+                        AppState::Idle
+                    };
+                    state_timer = 0;
+                }
+            },
+            AppState::Ranging => {
+
+                vl6180x.start_ranging().unwrap();
+
+                if state_timer == 0 {
+                    // first time in state
+                    triggered = 0;
+                    writeln!(usart, "err [Ranging] state").unwrap();
                 }
 
+                state_timer += 1;
+                if state_timer >= RANGING_TIME {
+                    state = AppState::Idle;
+                    state_timer = 0;
+                }
+                delay.delay_ms(20_u16);
 
-                sensordata = SensorData::new();
+
+                if distance_sample > 0 {
+                    if distance_detector.is_triggered(distance_sample as i32) {
+                        writeln!(usart, "success Detect mail!").unwrap();
+                        sensordata.trigger_distance(true);
+                    }
+                    distance_sample = 0;
+                }
+
+                if sensordata.properties_set() > 1 {
+                    let t: u32 = TIME_MS.get();
+                    sensordata.time_ms(t);
+                    writeln!(usart, "{:?}", sensordata).unwrap();
+                    #[cfg(feature = "use_flash")]
+                    match storage.write(sensordata) {
+                        Err(err) => writeln!(usart, "error while writing to flash: {:?}", err).unwrap(),
+                        _ => {}
+                    };
+
+                    sensordata = SensorData::new();
+                }
             }
         }
     }
