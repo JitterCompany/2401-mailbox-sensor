@@ -239,10 +239,10 @@ fn main() -> ! {
         let mut i = 0u32;
         let n  = FLASH_SIZE / (SensorData::size() + 1);
 
-        led2.set_high().unwrap();
-        writeln!(usart, "Wait 3 seconds before umping flash").unwrap();
+        led1.set_high().unwrap();
+        writeln!(usart, "Wait 3 seconds before dumping flash").unwrap();
         delay.delay_ms(3*1000u16);
-        led2.set_low().unwrap();
+        led1.set_low().unwrap();
 
         writeln!(usart, "Start flash dump (max {} lines).", n).unwrap();
         while i < n {
@@ -336,6 +336,8 @@ fn main() -> ! {
 
     #[cfg(feature = "full_erase")]
     {
+        led1.set_high().unwrap();
+
         writeln!(usart, "Erase storage now..").unwrap();
         let start_time = TIME_MS.get();
         match storage.erase_all() {
@@ -348,6 +350,9 @@ fn main() -> ! {
                 writeln!(usart, "Erased storage in {} [sec] ", total_erase_time).unwrap();
             }
         }
+
+        led1.set_low().unwrap();
+
     }
 
     #[cfg(feature = "use_flash")]
@@ -418,7 +423,7 @@ fn main() -> ! {
         let vbat_val: u16 = adc.read(&mut vbat_pin).expect("adc read failed");
         let (vdda_mv, _vbat_mv) = calc_vbat(vref_val as u32, vbat_val as u32);
 
-        sensordata.vbat(vdda_mv as u16);
+        sensordata.vbat(_vbat_mv as u16);
 
 
         match state {
@@ -443,6 +448,8 @@ fn main() -> ! {
                     state_timer = 0;
                     sensordata.trigger_light(true);
                     writeln!(usart, "light changed: start ranging").unwrap();
+                } else {
+                    delay.delay_ms(100_u16);
                 }
 
                 if distance_sample > 0 {
@@ -450,15 +457,14 @@ fn main() -> ! {
                     distance_sample = 0;
                 }
 
-                delay.delay_ms(500_u16);
 
                 if sensordata.properties_set() > 1 {
                     let t: u32 = TIME_MS.get();
 
                     // every n seconds
-                    if (t / 1000) % 2 == 0 {
+                    if (t / 100) % 20 == 0 {
                         sensordata.time_ms(t);
-                        writeln!(usart, "{:?}", sensordata).unwrap();
+                        writeln!(usart, "==={:?}", sensordata).unwrap();
 
                         #[cfg(feature = "use_flash")]
                         match storage.write(sensordata) {
@@ -492,7 +498,10 @@ fn main() -> ! {
                 if sensordata.properties_set() > 1 {
                     let t: u32 = TIME_MS.get();
                     sensordata.time_ms(t);
+
+                    #[cfg(debug_assertions)]
                     writeln!(usart, "{:?}", sensordata).unwrap();
+
                     #[cfg(feature = "use_flash")]
                     match storage.write(sensordata) {
                         Err(err) => writeln!(usart, "error while writing to flash: {:?}", err).unwrap(),
@@ -502,12 +511,12 @@ fn main() -> ! {
                 delay.delay_ms(1_u16);
 
                 state_timer += 1;
-                if state_timer >= TRIGGER_TIME {
-                    state = if triggered > 5 {
-                        AppState::Ranging
-                    } else {
-                        AppState::Idle
-                    };
+
+                if triggered >= 3 {
+                    state = AppState::Ranging;
+                    state_timer = 0;
+                } else if state_timer >= TRIGGER_TIME {
+                    state = AppState::Idle;
                     state_timer = 0;
                 }
             },
@@ -540,7 +549,10 @@ fn main() -> ! {
                 if sensordata.properties_set() > 1 {
                     let t: u32 = TIME_MS.get();
                     sensordata.time_ms(t);
+
+                    #[cfg(debug_assertions)]
                     writeln!(usart, "{:?}", sensordata).unwrap();
+
                     #[cfg(feature = "use_flash")]
                     match storage.write(sensordata) {
                         Err(err) => writeln!(usart, "error while writing to flash: {:?}", err).unwrap(),
